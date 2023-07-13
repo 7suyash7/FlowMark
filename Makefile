@@ -1,5 +1,14 @@
+.PHONY: run build
+
 run:
-	go run .
+	./FlowMark start
 
 build: 
-	go build
+	go build -o FlowMark ./src/main.go
+
+test:
+	go test ./...
+
+clean:
+	go clean
+	rm FlowBench

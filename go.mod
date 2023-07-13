@@ -1,4 +1,4 @@
-module github.com/7suyash7/FlowBlockchain
+module github.com/7suyash7/FlowMark
 
 go 1.20
 
