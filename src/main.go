@@ -152,6 +152,28 @@ func promptField(fieldName string) {
 	os.Setenv(fieldName, value)
 }
 
+func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier) {
+	for {
+		result, err := client.GetTransactionResult(ctx, txID)
+		if err != nil {
+			log.Printf("Failed to get transaction result for %s: %v", txID, err)
+			continue
+		}
+
+		if result.Status == flow.TransactionStatusSealed {
+			if result.Error != nil {
+				log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
+			} else {
+				log.Printf("Transaction %s sealed successfully", txID)
+			}
+			break
+		}
+
+		// Sleep for a while before checking again.
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func runBenchmark() {
 	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
 	numTransactions, err := strconv.Atoi(numTransactionsStr)
@@ -184,18 +206,25 @@ func runBenchmark() {
 
 
 	var senderAddressHex = LoadEnvVar("SENDER_ADDRESS")
-	senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
-	if err != nil {
-		panic(err)
-	}
+	senderAddress := flow.HexToAddress(senderAddressHex)
 
-	sequenceNumber := GetInitialSequenceNumber(senderAccount)
+
 
 	stats := NewTransactionStats()
-    transactionIDs := make([]flow.Identifier, 0, numTransactions)
+    transactionIDs := make([]flow.Identifier, 0, numTransactions)	
 
 	for i := 0; i < numTransactions; i++ {
+		// Get the latest account info for this address
+		senderAccount, err := client.GetAccountAtLatestBlock(ctx, senderAddress)
+		if err != nil {
+		panic("failed to fetch proposer account")
+		}
+
+		// Get the latest sequence number for this key
+		sequenceNumber := senderAccount.Keys[0].SequenceNumber
+
 		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber)
+		WaitForSeal(ctx, client, txID)
 		sequenceNumber++
         transactionIDs = append(transactionIDs, txID)
 		totalLatency += latency
