@@ -254,6 +254,7 @@ func promptField(fieldName string) {
 // 	GenerateReport(stats)
 // }
 
+
 func runBenchmark() {
 	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
 	numTransactions, err := strconv.Atoi(numTransactionsStr)
@@ -374,4 +375,5 @@ func runBenchmark() {
 
 	PrintStatsTable(stats)
 	GenerateReport(stats)
+	os.Exit(0)
 }
