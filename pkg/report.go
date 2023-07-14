@@ -2,9 +2,9 @@ package pkg
 
 import (
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
-	"html/template"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -47,7 +47,7 @@ func PrintStatsTable(stats TransactionStats) {
 	minLatency := fmt.Sprintf("%.1f ms", stats.MinLatency.Seconds()*1000)
 	maxLatency := fmt.Sprintf("%.1f ms", stats.MaxLatency.Seconds()*1000)
 
-	table.SetAlignment(tablewriter.ALIGN_CENTER) 
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
 
 	table.Append([]string{"Send Rate (tps)", fmt.Sprintf("%.2f", stats.SendRate)})
 	table.Append([]string{"Seal Rate (tps)", fmt.Sprintf("%.2f", stats.SealRate)})
