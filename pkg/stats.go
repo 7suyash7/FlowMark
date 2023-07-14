@@ -24,6 +24,7 @@ type TransactionStats struct {
 	Network           string
 }
 
+
 func NewTransactionStats() TransactionStats {
 	return TransactionStats{
 		TxHexes: make([]string, 0),

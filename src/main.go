@@ -262,7 +262,6 @@ func runBenchmark() {
     	log.Fatalf("Error converting NO_OF_TRANSACTION to int: %v", err)
 	}
 	startTime := time.Now()
-
 	var totalSendLatency time.Duration
 	var totalSealLatency time.Duration
 	maxLatency := time.Duration(0)
@@ -290,7 +289,6 @@ func runBenchmark() {
 	if err != nil {
 		panic(err)
 	}
-
 
 	var senderAddressHex = LoadEnvVar("SENDER_ADDRESS")
 	senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
@@ -375,5 +373,4 @@ func runBenchmark() {
 
 	PrintStatsTable(stats)
 	GenerateReport(stats)
-	os.Exit(0)
 }

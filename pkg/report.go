@@ -328,3 +328,4 @@ func GenerateReport(stats TransactionStats) {
 	fmt.Printf("Benchmark Complete!\n")
 	fmt.Printf("For more information, check out report at file://%s\n", absPath)
 }
+
