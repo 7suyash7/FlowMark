@@ -40,15 +40,12 @@ This will compile the application and create a binary name **FlowMark**
 
 There are two ways to run the binary.
 
-1. Running the binary when you have setup the **`.env`** yourself.
+1. Running the binary when you have the **`.env`** setup yourself.
  ```
     make run
 ```
- 2. Setting up the **`.env`** through the command 
-```
-     ./FlowMark start
-```
-The application supports command-line options to override the environment variables. Here is how it can be used:
+
+2. Running the binary using command-line options. Here is how it can be used:
 ```
     ./FlowMark start --sender-address <senderAddress> --receiver-address <receiverAddress> --numTransaction <numberOfTransactions> --network <testnet> --sender-priv-address <senderAccountPrivKey>
 ```
