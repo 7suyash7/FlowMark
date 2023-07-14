@@ -180,7 +180,8 @@ func runBenchmark() {
     	log.Fatalf("Error converting NO_OF_TRANSACTION to int: %v", err)
 	}
 	startTime := time.Now()
-	var totalLatency time.Duration
+	var totalSendLatency time.Duration
+	var totalSealLatency time.Duration
 	maxLatency := time.Duration(0)
 	minLatency := time.Duration(math.MaxInt64)
 
@@ -203,11 +204,8 @@ func runBenchmark() {
 		panic(err)
 	}
 
-
 	var senderAddressHex = LoadEnvVar("SENDER_ADDRESS")
 	senderAddress := flow.HexToAddress(senderAddressHex)
-
-
 
 	stats := NewTransactionStats()
     transactionIDs := make([]flow.Identifier, 0, numTransactions)	
@@ -222,11 +220,18 @@ func runBenchmark() {
 		// Get the latest sequence number for this key
 		sequenceNumber := senderAccount.Keys[0].SequenceNumber
 
+		sendStartTime := time.Now()
 		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber)
+		sendEndTime := time.Now()
+		totalSendLatency += sendEndTime.Sub(sendStartTime)
+		
 		WaitForSeal(ctx, client, txID)
+		sealEndTime := time.Now()
+		totalSealLatency += sealEndTime.Sub(sendStartTime)
+
 		sequenceNumber++
         transactionIDs = append(transactionIDs, txID)
-		totalLatency += latency
+		
 		stats = UpdateStats(stats, latency, txHex)
 
 		if latency > maxLatency {
@@ -256,9 +261,8 @@ func runBenchmark() {
 		}
 	}
 
-	stats = FinalizeStats(stats, startTime, endTime, totalLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
+	stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, totalSealLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
 
 	PrintStatsTable(stats)
 	GenerateReport(stats)
-	os.Exit(0)
 }
