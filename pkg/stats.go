@@ -5,7 +5,7 @@ import (
 )
 
 type TransactionStats struct {
-	SendRate       float64
+	SealRate       float64
 	AverageLatency time.Duration
 	MinLatency     time.Duration
 	MaxLatency     time.Duration
@@ -30,11 +30,11 @@ func UpdateStats(stats TransactionStats, latency time.Duration, txHex string) Tr
 
 func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Time, totalLatency time.Duration, minLatency time.Duration, maxLatency time.Duration, numTransactions int, successfulTransactions int, Network string) TransactionStats {
 	duration := endTime.Sub(startTime)
-	sendRate := float64(numTransactions) / duration.Seconds()
+	sealRate := float64(numTransactions) / duration.Seconds()
 	avgLatency := totalLatency / time.Duration(numTransactions)
-	throughput := (float64(successfulTransactions) / duration.Seconds())
+	throughput := 1 / avgLatency.Seconds()
 
-	stats.SendRate = sendRate
+	stats.SealRate = sealRate
 	stats.AverageLatency = avgLatency
 	stats.MinLatency = minLatency
 	stats.MaxLatency = maxLatency
