@@ -156,11 +156,9 @@ func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier)
 	for {
 		result, err := client.GetTransactionResult(ctx, txID)
 		if err != nil {
-			log.Printf("Failed to get transaction result for %s: %v", txID, err)
+			// log.Printf("Failed to get transaction result for %s: %v", txID, err)
 			continue
-		}
-
-		if result.Status == flow.TransactionStatusSealed {
+		} else if result.Status == flow.TransactionStatusSealed {
 			if result.Error != nil {
 				log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
 			} else {
@@ -173,6 +171,7 @@ func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier)
 		time.Sleep(1 * time.Second)
 	}
 }
+
 
 func runBenchmark() {
 	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
@@ -261,4 +260,5 @@ func runBenchmark() {
 
 	PrintStatsTable(stats)
 	GenerateReport(stats)
+	os.Exit(0)
 }
