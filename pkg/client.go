@@ -18,3 +18,13 @@ func GetAccount(ctx context.Context, client *http.Client, address flow.Address) 
 func GetInitialSequenceNumber(account *flow.Account) uint64 {
 	return account.Keys[0].SequenceNumber
 }
+
+func GetSequenceNumber(account *flow.Account, keyIndex int) uint64 {
+	if len(account.Keys) > 0 {
+		for keyIndex >= len(account.Keys) {
+			keyIndex -= len(account.Keys)
+		}
+		return account.Keys[keyIndex].SequenceNumber
+	}
+	return 0 // or an appropriate default value if no keys are available
+}

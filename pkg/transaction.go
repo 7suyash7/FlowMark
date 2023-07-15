@@ -11,7 +11,7 @@ import (
     "github.com/onflow/flow-go-sdk/crypto"
 )
 
-func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64) (time.Duration, string, flow.Identifier) {
+func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int) (time.Duration, string, flow.Identifier) {
     tx := flow.NewTransaction()
     var recipientAddressHex = LoadEnvVar("RECIPIENT_ADDRESS")
     var senderPrivateKeyHex = LoadEnvVar("SENDER_PRIVATE_KEY")
@@ -48,7 +48,7 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     }
     tx.SetReferenceBlockID(latestBlock.ID)
 
-    tx.SetProposalKey(senderAccount.Address, senderAccount.Keys[0].Index, sequenceNumber)
+    tx.SetProposalKey(senderAccount.Address, senderAccount.Keys[keyID].Index, sequenceNumber)
     tx.SetPayer(senderAccount.Address)
     tx.AddAuthorizer(senderAccount.Address)
 
@@ -80,7 +80,7 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
         panic(err)
     }
 
-    if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[0].Index, signer); err != nil {
+    if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[keyID].Index, signer); err != nil {
         panic(err)
     }
 

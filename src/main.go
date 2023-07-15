@@ -189,13 +189,14 @@ func runBenchmark() {
 		panic(err)
 	}
 
-	sequenceNumber := GetInitialSequenceNumber(senderAccount)
-
 	stats := NewTransactionStats()
     transactionIDs := make([]flow.Identifier, 0, numTransactions)
 
 	for i := 0; i < numTransactions; i++ {
-		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber)
+
+		sequenceNumber := GetSequenceNumber(senderAccount, i)
+
+		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber, i)
 		sequenceNumber++
         transactionIDs = append(transactionIDs, txID)
 		totalLatency += latency
