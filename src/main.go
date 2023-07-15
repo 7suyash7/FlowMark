@@ -189,6 +189,15 @@ func runBenchmark() {
 		panic(err)
 	}
 
+	sequenceNumber := GetInitialSequenceNumber(senderAccount)
+
+
+	fmt.Printf("Generating KeyIDs for transaction...")
+	hex := AddKeys(ctx, client, senderAccount,sequenceNumber, 20)
+	fmt.Printf("hex: %s \n", hex)
+
+	time.Sleep(10 * time.Second)
+
 	stats := NewTransactionStats()
     transactionIDs := make([]flow.Identifier, 0, numTransactions)
 
