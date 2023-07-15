@@ -194,9 +194,17 @@ func runBenchmark() {
 
 	for i := 0; i < numTransactions; i++ {
 
-		sequenceNumber := GetSequenceNumber(senderAccount, i)
+		if (i % (len(senderAccount.Keys)/2) == 0){
+			senderAccount, err = GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
+			if err != nil {
+				panic(err)
+			}
+		}
 
-		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber, i)
+		sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
+
+
+		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
 		sequenceNumber++
         transactionIDs = append(transactionIDs, txID)
 		totalLatency += latency
@@ -213,7 +221,6 @@ func runBenchmark() {
 
 	endTime := time.Now()
 
-	time.Sleep(10 * time.Second)
 	fmt.Printf("Generating results...\n")
 
     successfulTransactions := 0

@@ -80,8 +80,13 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
         panic(err)
     }
 
-    if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[keyID].Index, signer); err != nil {
+    if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[0].Index, signer); err != nil {
         panic(err)
+    }
+    if keyID != 0 {
+        if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[keyID].Index, signer); err != nil {
+            panic(err)
+        }
     }
 
     sendStartTime := time.Now()

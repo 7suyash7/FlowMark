@@ -19,12 +19,12 @@ func GetInitialSequenceNumber(account *flow.Account) uint64 {
 	return account.Keys[0].SequenceNumber
 }
 
-func GetSequenceNumber(account *flow.Account, keyIndex int) uint64 {
-	if len(account.Keys) > 0 {
-		for keyIndex >= len(account.Keys) {
-			keyIndex -= len(account.Keys)
-		}
-		return account.Keys[keyIndex].SequenceNumber
+func GetSequenceNumber(account *flow.Account, keyIndex int) (uint64, int) {
+	for keyIndex >= len(account.Keys) {
+		keyIndex -= len(account.Keys)
 	}
-	return 0 // or an appropriate default value if no keys are available
+	// NOTE: added returning keyIndex here, cause it's already being calculated here,
+	// 		 Or we would run into runtime error in sendTransaction error while setting Proposal Key
+	//		 and while signing the envelope.
+	return account.Keys[keyIndex].SequenceNumber, keyIndex
 }
