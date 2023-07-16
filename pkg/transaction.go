@@ -15,7 +15,7 @@ import (
 
 
 
-func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int, successfulTransactions *int) (time.Duration, time.Duration, string, flow.Identifier) {
+func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int, successfulTransactions *int) (time.Duration, time.Duration, string, flow.Identifier, bool) {
     tx := flow.NewTransaction()
     var recipientAddressHex = LoadEnvVar("RECIPIENT_ADDRESS")
     var senderPrivateKeyHex = LoadEnvVar("SENDER_PRIVATE_KEY")
@@ -112,24 +112,39 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
         }
     }
 
-    startTime := time.Now()
+    // startTime := time.Now()
 
+    // if err = client.SendTransaction(ctx, *tx); err != nil {
+    //     panic(err)
+    // }
+
+    // transactionEndTime := time.Now()
+
+    // txHex := tx.ID().Hex()
+    // fmt.Printf("hex: %s \n", txHex)
+
+    // WaitForSeal(ctx, client, tx.ID(), successfulTransactions)
+    // sealEndTime := time.Now()
+
+    // latency := transactionEndTime.Sub(startTime)
+    // sealLatency := sealEndTime.Sub(startTime)
+
+    // return latency, sealLatency, txHex, tx.ID(), true
+    startTime := time.Now()
     if err = client.SendTransaction(ctx, *tx); err != nil {
         panic(err)
     }
-
-    transactionEndTime := time.Now()
-
+    txEndTime := time.Now()
     txHex := tx.ID().Hex()
     fmt.Printf("hex: %s \n", txHex)
 
     WaitForSeal(ctx, client, tx.ID(), successfulTransactions)
     sealEndTime := time.Now()
 
-    latency := transactionEndTime.Sub(startTime)
+    txLatency := txEndTime.Sub(startTime)
     sealLatency := sealEndTime.Sub(startTime)
 
-    return latency, sealLatency, txHex, tx.ID()
+    return txLatency, sealLatency, txHex, tx.ID(), true
 }
 
 func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, numOfKeysToAdd int) error {
@@ -221,10 +236,27 @@ func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier,
 	// 			log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
     //             break
 	// 		} else {
-	// 			*successfulTransactions++
+	// 			successfulTransactions++
     //             break
 	// 		}
             
+	// 	}
+
+	// 	// Sleep for a while before checking again.
+	// 	time.Sleep(1 * time.Second)
+	// }
+    // for {
+	// 	result, err := client.GetTransactionResult(ctx, txID)
+	// 	if err != nil {
+	// 		// log.Printf("Failed to get transaction result for %s: %v", txID, err)
+	// 		continue
+	// 	} else if result.Status == flow.TransactionStatusSealed {
+	// 		if result.Error != nil {
+	// 			log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
+	// 		} else {
+	// 			log.Printf("Transaction %s sealed successfully", txID)
+	// 		}
+	// 		break
 	// 	}
 
 	// 	// Sleep for a while before checking again.

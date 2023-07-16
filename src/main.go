@@ -16,6 +16,12 @@ import (
 	"github.com/onflow/flow-go-sdk/access/http"
 	"github.com/onflow/flow-go-sdk"
 	"github.com/joho/godotenv"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
+	"github.com/ttacon/chalk"
+	// "github.com/vbauerster/mpb/v6"
+	// "github.com/vbauerster/mpb/v6/decor"
+	"github.com/mitchellh/colorstring"
 )
 
 func main() {
@@ -153,114 +159,20 @@ func promptField(fieldName string) {
 	os.Setenv(fieldName, value)
 }
 
-
-// func runBenchmark() {
-// 	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
-// 	numTransactions, err := strconv.Atoi(numTransactionsStr)
-// 	if err != nil {
-//     	log.Fatalf("Error converting NO_OF_TRANSACTION to int: %v", err)
-// 	}
-// 	startTime := time.Now()
-// 	var totalSendLatency time.Duration
-// 	var totalSealLatency time.Duration
-// 	maxLatency := time.Duration(0)
-// 	minLatency := time.Duration(math.MaxInt64)
-
-// 	ctx := context.Background()
-// 	network := LoadEnvVar("NETWORK")
-// 	var client *http.Client
-
-// 	switch network {
-// 		case "emulator":
-// 			client, err = InitializeClient(http.EmulatorHost)
-// 		case "testnet":
-// 			client, err = InitializeClient(http.TestnetHost)
-// 		case "mainnet":
-// 			client, err = InitializeClient(http.MainnetHost)
-// 		default:
-// 			panic("No Network Selected! Select mainnet, testnet, or emulator in .env under the network variable")
-// 	}
-
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-
-// 	var senderAddressHex = LoadEnvVar("SENDER_ADDRESS")
-// 	senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	sequenceNumber := GetInitialSequenceNumber(senderAccount)
-
-
-// 	fmt.Printf("Generating KeyIDs for transaction...")
-// 	hex := AddKeys(ctx, client, senderAccount,sequenceNumber, 20)
-// 	fmt.Printf("hex: %s \n", hex)
-
-// 	time.Sleep(10 * time.Second)
-
-// 	stats := NewTransactionStats()
-//     transactionIDs := make([]flow.Identifier, 0, numTransactions)
-
-// 	for i := 0; i < numTransactions; i++ {
-
-// 		if (i % (len(senderAccount.Keys)/2) == 0){
-// 			senderAccount, err = GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
-// 			if err != nil {
-// 				panic(err)
-// 			}
-// 		}
-
-// 		sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
-
-
-// 		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
-// 		sequenceNumber++
-//         transactionIDs = append(transactionIDs, txID)
-// 		totalLatency += latency
-// 		stats = UpdateStats(stats, latency, txHex)
-
-// 		if latency > maxLatency {
-// 			maxLatency = latency
-// 		}
-
-// 		if latency < minLatency {
-// 			minLatency = latency
-// 		}
-// 	}
-
-// 	endTime := time.Now()
-
-// 	fmt.Printf("Generating results...\n")
-
-//     successfulTransactions := 0
-// 	for _, txID := range transactionIDs {
-// 		result, err := client.GetTransactionResult(ctx, txID)
-// 		if err != nil {
-// 			log.Printf("Failed to get transaction result for %s: %v", txID, err)
-// 			continue
-// 		}
-
-// 		if result.Status == flow.TransactionStatusSealed && result.Error == nil {
-// 			successfulTransactions++
-// 		}
-// 	}
-
-// 	stats = FinalizeStats(stats, startTime, endTime, totalLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
-
-// 	PrintStatsTable(stats)
-// 	GenerateReport(stats)
-// }
-
-
 func runBenchmark() {
 	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
+
 	numTransactions, err := strconv.Atoi(numTransactionsStr)
 	if err != nil {
     	log.Fatalf("Error converting NO_OF_TRANSACTION to int: %v", err)
 	}
+
+	tpsStr := LoadEnvVar("TPS")
+	tps, err := strconv.Atoi(tpsStr)
+	if err != nil {
+		log.Fatalf("Error converting TPS int: %v")
+	}
+
 	startTime := time.Now()
 	var totalSendLatency time.Duration
 	var totalSealLatency time.Duration
@@ -301,11 +213,12 @@ func runBenchmark() {
 	numOfKeys := len(senderAccount.Keys)
 	keysToBeGenerated := numTransactions - numOfKeys
 	if keysToBeGenerated > 0 {
-		fmt.Printf("Generating KeyIDs for transaction...")
+		fmt.Println(chalk.Green.Color("Generating KeyIDs for transaction..."))
 		AddKeys(ctx, client, senderAccount,sequenceNumber, keysToBeGenerated)
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println(chalk.Green.Color("Keys Generated!"))
 	}
-
-
+	
 	stats := NewTransactionStats()
     transactionIDs := make([]flow.Identifier, 0, numTransactions)
 
@@ -316,7 +229,7 @@ func runBenchmark() {
 
 		var wg sync.WaitGroup
 
-		sem := make(chan bool, 900) // Limiting to 25 goroutines
+		sem := make(chan bool, tps) // Limiting to 25 goroutines
 		
 		for i := 0; i < numTransactions; i++ {
 			sem <- true // Will block if there is already 25 goroutines running
@@ -328,7 +241,13 @@ func runBenchmark() {
 				// Your original code here
 				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
 		
-				latency, sealLatency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID, &successfulTransactions)
+				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID, &successfulTransactions)
+			
+				if success {
+					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
+				} else {
+					fmt.Println(chalk.Red.Color("Transaction not sent successfully"))
+				}
 		
 				transactionIDs = append(transactionIDs, txID)
 				totalSealLatency += latency
@@ -352,7 +271,7 @@ func runBenchmark() {
 				}
 			}(i)
 		
-			if (i+1)%25 == 0 { // if i is a multiple of 25
+			if (i+1)%tps == 0 {
 				fmt.Println("Waiting before starting next batch")
 				time.Sleep(2 * time.Second) // Wait for 2 seconds before starting next batch
 			}
@@ -367,7 +286,43 @@ func runBenchmark() {
 
 	endTime := time.Now()
 
-	fmt.Printf("Generating results...\n")
+	fmt.Println(colorstring.Color("[green]Generating results..."))
+	time.Sleep(5 * time.Second)
+	numTransactions = len(transactionIDs)
+	progress := mpb.New(mpb.WithWidth(60))
+	bar := progress.AddBar(int64(numTransactions), mpb.BarStyle("[=>-|"), mpb.PrependDecorators(
+		decor.Name("Transactions ", decor.WC{}),
+		decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
+	), mpb.AppendDecorators(
+		decor.EwmaETA(decor.ET_STYLE_GO, 90),
+	))
+
+	// successfulTransactions := 0
+	for _, txID := range transactionIDs {
+		result, err := client.GetTransactionResult(ctx, txID)
+		if err != nil {
+			log.Printf("Failed to get transaction result for %s: %v", txID, err)
+		} else {
+			if result.Status == flow.TransactionStatusSealed && result.Error == nil {
+				successfulTransactions++
+			}
+		}
+		bar.Increment()
+	}
+	progress.Wait()
+
+	// successfulTransactions := 0
+	// for _, txID := range transactionIDs {
+	// 	result, err := client.GetTransactionResult(ctx, txID)
+	// 	if err != nil {
+	// 		log.Printf("Failed to get transaction result for %s: %v", txID, err)
+	// 		continue
+	// 	}
+
+	// 	if result.Status == flow.TransactionStatusSealed && result.Error == nil {
+	// 		successfulTransactions++
+	// 	}
+	// }
 
 	stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, minLatency, maxLatency, totalSealLatency, numTransactions, successfulTransactions, network)
 
