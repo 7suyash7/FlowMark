@@ -229,16 +229,13 @@ func runBenchmark() {
 
 		var wg sync.WaitGroup
 
-		sem := make(chan bool, tps) // Limiting to 25 goroutines
+	timePerTransaction := time.Second / time.Duration(tps)
 		
 		for i := 0; i < numTransactions; i++ {
-			sem <- true // Will block if there is already 25 goroutines running
 			wg.Add(1)
 			go func(i int) {
 				defer wg.Done()
-				defer func() { <-sem }() // Signal that we've finished a task
 		
-				// Your original code here
 				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
 		
 				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
@@ -271,19 +268,11 @@ func runBenchmark() {
 				}
 			}(i)
 		
-			if (i+1)%tps == 0 {
-				fmt.Println("Waiting before starting next batch")
-				time.Sleep(2 * time.Second) // Wait for 2 seconds before starting next batch
-			}
+		time.Sleep(timePerTransaction)
 		}
 		
 		wg.Wait()
 		
-		// Make sure to drain the semaphore channel if some routines finished earlier
-		for i := 0; i < cap(sem); i++ {
-			sem <- true
-		}
-
 	endTime := time.Now()
 
 	time.Sleep(5 * time.Second)
