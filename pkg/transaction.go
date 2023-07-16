@@ -5,6 +5,7 @@ import (
     "time"
     "fmt"
     "strings"
+    "log"
 
     "github.com/onflow/cadence"
     "github.com/onflow/flow-go-sdk"
@@ -12,7 +13,9 @@ import (
     "github.com/onflow/flow-go-sdk/crypto"
 )
 
-func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int) (time.Duration, string, flow.Identifier) {
+
+
+func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int, successfulTransactions *int) (time.Duration, time.Duration, string, flow.Identifier) {
     tx := flow.NewTransaction()
     var recipientAddressHex = LoadEnvVar("RECIPIENT_ADDRESS")
     var senderPrivateKeyHex = LoadEnvVar("SENDER_PRIVATE_KEY")
@@ -43,10 +46,29 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     tx.SetScript([]byte(script))
     tx.SetGasLimit(100)
 
-    latestBlock, err := client.GetLatestBlockHeader(ctx, true)
-    if err != nil {
-        panic(err)
+    var latestBlock *flow.BlockHeader
+    var fetchErr error
+
+    maxRetryAttempts := 5 // adjust this as needed
+    retryInterval := time.Second * 1 // adjust this as needed
+
+    for attempts := 0; attempts < maxRetryAttempts; attempts++ {
+        latestBlock, fetchErr = client.GetLatestBlockHeader(ctx, true)
+        if fetchErr == nil {
+            // We successfully fetched the block, no need to retry anymore.
+            break
+        }
+        // Optionally log the error and the retry attempt.
+        log.Printf("Failed to fetch the block (attempt %d): %v", attempts+1, fetchErr)
+        // Pause for a while before next retry.
+        time.Sleep(retryInterval)
     }
+    if fetchErr != nil {
+        // We failed to fetch the block even after retrying.
+        // Now we have to handle this error (stop the function/panic/etc.).
+        panic(fetchErr)
+    }
+    
     tx.SetReferenceBlockID(latestBlock.ID)
 
     tx.SetProposalKey(senderAccount.Address, senderAccount.Keys[keyID].Index, sequenceNumber)
@@ -90,19 +112,24 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
         }
     }
 
-    sendStartTime := time.Now()
+    startTime := time.Now()
 
     if err = client.SendTransaction(ctx, *tx); err != nil {
         panic(err)
     }
 
-    sendEndTime := time.Now()
-
-    latency := sendEndTime.Sub(sendStartTime)
+    transactionEndTime := time.Now()
 
     txHex := tx.ID().Hex()
     fmt.Printf("hex: %s \n", txHex)
-    return latency, txHex, tx.ID()
+
+    WaitForSeal(ctx, client, tx.ID(), successfulTransactions)
+    sealEndTime := time.Now()
+
+    latency := transactionEndTime.Sub(startTime)
+    sealLatency := sealEndTime.Sub(startTime)
+
+    return latency, sealLatency, txHex, tx.ID()
 }
 
 func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, numOfKeysToAdd int) error {
@@ -179,5 +206,28 @@ func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Accou
 
 	txHex := tx.ID().Hex()
 	fmt.Printf("%d Keys generated, Hex: %s \n", numOfKeysToAdd, txHex)
+    time.Sleep(10 * time.Second)
 	return nil
+}
+
+func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier, successfulTransactions *int) {
+	// for {
+	// 	result, err := client.GetTransactionResult(ctx, txID)
+	// 	if err != nil {
+	// 		// log.Printf("Failed to get transaction result for %s: %v", txID, err)
+	// 		continue
+	// 	} else if result.Status == flow.TransactionStatusSealed {
+	// 		if result.Error != nil {
+	// 			log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
+    //             break
+	// 		} else {
+	// 			*successfulTransactions++
+    //             break
+	// 		}
+            
+	// 	}
+
+	// 	// Sleep for a while before checking again.
+	// 	time.Sleep(1 * time.Second)
+	// }
 }
