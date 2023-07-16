@@ -65,8 +65,9 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     }
     if fetchErr != nil {
         // We failed to fetch the block even after retrying.
-        // Now we have to handle this error (stop the function/panic/etc.).
-        panic(fetchErr)
+        // Print the error instead of panicking.
+        fmt.Printf("Error fetching the block: %v\n", fetchErr)
+        return 0, 0, "", flow.Identifier{}, false
     }
     
     tx.SetReferenceBlockID(latestBlock.ID)
@@ -77,44 +78,52 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
 
     amount, err := cadence.NewUFix64("1.234")
     if err != nil {
-        panic(err)
+        fmt.Printf("Error creating UFix64 amount: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
 
     if err = tx.AddArgument(amount); err != nil {
-        panic(err)
+        fmt.Printf("Error adding amount argument: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
 
     recipient := cadence.NewAddress(flow.HexToAddress(recipientAddressHex))
 
     err = tx.AddArgument(recipient)
     if err != nil {
-        panic(err)
+        fmt.Printf("Error adding recipient argument: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
 
     sigAlgo := crypto.ECDSA_P256
     hashAlgo := crypto.SHA3_256
     privateKey, err := crypto.DecodePrivateKeyHex(sigAlgo, senderPrivateKeyHex)
     if err != nil {
-        panic(err)
+        fmt.Printf("Error decoding private key: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
 
     signer, err := crypto.NewInMemorySigner(privateKey, hashAlgo)
     if err != nil {
-        panic(err)
+        fmt.Printf("Error creating signer: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
 
     if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[0].Index, signer); err != nil {
-        panic(err)
+        fmt.Printf("Error signing envelope: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
     if keyID != 0 {
         if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[keyID].Index, signer); err != nil {
-            panic(err)
+            fmt.Printf("Error signing envelope: %v\n", err)
+            return 0, 0, "", flow.Identifier{}, false
         }
     }
 
     startTime := time.Now()
     if err = client.SendTransaction(ctx, *tx); err != nil {
-        panic(err)
+        fmt.Printf("Error sending transaction: %v\n", err)
+        return 0, 0, "", flow.Identifier{}, false
     }
     txEndTime := time.Now()
     txHex := tx.ID().Hex()
@@ -125,7 +134,6 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
 
     txLatency := txEndTime.Sub(startTime)
     sealLatency := sealEndTime.Sub(startTime)
-
 
     return txLatency, sealLatency, txHex, tx.ID(), true
 }
