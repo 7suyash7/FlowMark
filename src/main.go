@@ -241,7 +241,7 @@ func runBenchmark() {
 				// Your original code here
 				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
 		
-				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID, &successfulTransactions)
+				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
 			
 				if success {
 					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
@@ -250,7 +250,7 @@ func runBenchmark() {
 				}
 		
 				transactionIDs = append(transactionIDs, txID)
-				totalSealLatency += latency
+				totalSendLatency += latency
 				totalSealLatency += sealLatency
 				stats = UpdateStats(stats, txHex)
 		
@@ -286,7 +286,6 @@ func runBenchmark() {
 
 	endTime := time.Now()
 
-	fmt.Println(colorstring.Color("[green]Generating results..."))
 	time.Sleep(5 * time.Second)
 	numTransactions = len(transactionIDs)
 	progress := mpb.New(mpb.WithWidth(60))
@@ -311,20 +310,10 @@ func runBenchmark() {
 	}
 	progress.Wait()
 
-	// successfulTransactions := 0
-	// for _, txID := range transactionIDs {
-	// 	result, err := client.GetTransactionResult(ctx, txID)
-	// 	if err != nil {
-	// 		log.Printf("Failed to get transaction result for %s: %v", txID, err)
-	// 		continue
-	// 	}
+	fmt.Println(colorstring.Color("[green]Generating results..."))
 
-	// 	if result.Status == flow.TransactionStatusSealed && result.Error == nil {
-	// 		successfulTransactions++
-	// 	}
-	// }
 
-	stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, minLatency, maxLatency, totalSealLatency, numTransactions, successfulTransactions, network)
+	stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, totalSealLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
 
 	PrintStatsTable(stats)
 	GenerateReport(stats)
