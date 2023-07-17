@@ -159,6 +159,27 @@ func promptField(fieldName string) {
 	os.Setenv(fieldName, value)
 }
 
+func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier) {
+	for {
+		result, err := client.GetTransactionResult(ctx, txID)
+		if err != nil {
+			// log.Printf("Failed to get transaction result for %s: %v", txID, err)
+			continue
+		} else if result.Status == flow.TransactionStatusSealed {
+			if result.Error != nil {
+				log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
+			} else {
+				log.Printf("Transaction %s sealed successfully", txID)
+			}
+			break
+		}
+
+		// Sleep for a while before checking again.
+		time.Sleep(1 * time.Second)
+	}
+}
+
+
 func runBenchmark() {
 
 	benchmark, err := LoadBenchmarkConfig()
@@ -224,7 +245,7 @@ func runBenchmark() {
 	}
 	
 	stats := NewTransactionStats()
-    transactionIDs := make([]flow.Identifier, 0, numTransactions)
+    transactionIDs := make([]flow.Identifier, 0, numTransactions)	
 
 	senderAccount, err = GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
 		if err != nil {

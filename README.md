@@ -62,6 +62,7 @@ To display the current configuration, use the following command:
 ```
 
 ## Generating Reports
+
 At the end of benchmark test, the tool generates a detailed report file **(`report.html`)**. This report contains the performance metrics for the test run. The results are also displayed in the terminal after the benchmark is finished.
 # FlowMark
 
