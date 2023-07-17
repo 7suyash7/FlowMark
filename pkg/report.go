@@ -5,6 +5,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"strconv"
+	"log"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -72,14 +74,24 @@ func GenerateReport(stats TransactionStats) {
 	minLatency := fmt.Sprintf("%.1f ms", stats.MinLatency.Seconds()*1000)
 	maxLatency := fmt.Sprintf("%.1f ms", stats.MaxLatency.Seconds()*1000)
 
+	benchmark, err := LoadBenchmarkConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	transaction, err := LoadTransactionConfig()
+	if err != nil {
+		log.Fatalf("Failed to load transaction configuration: %v", err)
+	}
+
 	// Load configuration data
 	config := Configuration{
-		Network:            LoadEnvVar("NETWORK"),
-		NumTransactions:    LoadEnvVar("NO_OF_TRANSACTION"),
-		TransactionsPerSecond: LoadEnvVar("TPS"),
-		RecipientAddress:   LoadEnvVar("RECIPIENT_ADDRESS"),
-		SenderAddress:      LoadEnvVar("SENDER_ADDRESS"),
-		SenderPrivateKey:   LoadEnvVar("SENDER_PRIVATE_KEY"),
+		Network:            benchmark.Network,
+		NumTransactions:    strconv.Itoa(benchmark.NumOfTransactions),
+		TransactionsPerSecond: strconv.Itoa(benchmark.Tps),
+		RecipientAddress:   transaction.ScriptArguments.Recipient.Value,
+		SenderAddress:      transaction.Payer.Address,
+		SenderPrivateKey:   transaction.Payer.PrivateKey,
 	}
 
 	// Add config to template data

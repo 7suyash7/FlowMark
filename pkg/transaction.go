@@ -15,10 +15,15 @@ import (
 
 
 
+
 func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int) (time.Duration, time.Duration, string, flow.Identifier, bool) {
     tx := flow.NewTransaction()
-    var recipientAddressHex = LoadEnvVar("RECIPIENT_ADDRESS")
-    var senderPrivateKeyHex = LoadEnvVar("SENDER_PRIVATE_KEY")
+    transactionsss, err := LoadTransactionConfig()
+        if err != nil {
+            log.Fatalf("Failed to load transaction configuration: %v", err)
+        }
+    var recipientAddressHex = transactionsss.ScriptArguments.Recipient.Value
+    var senderPrivateKeyHex = transactionsss.Payer.PrivateKey
 
     script := `
     import FungibleToken from 0x9a0766d93b6608b7
@@ -140,7 +145,11 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
 
 func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, numOfKeysToAdd int) error {
 	tx := flow.NewTransaction()
-	var senderPrivateKeyHex = LoadEnvVar("SENDER_PRIVATE_KEY")
+    transaction, err := LoadTransactionConfig()
+	if err != nil {
+		log.Fatalf("Failed to load transaction configuration: %v", err)
+	}
+	var senderPrivateKeyHex = transaction.Payer.PrivateKey
 	publicKeyHex := strings.TrimPrefix(fmt.Sprintf("%+v", senderAccount.Keys[0].PublicKey), "0x")
 
 	script := `

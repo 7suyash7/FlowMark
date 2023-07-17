@@ -160,18 +160,20 @@ func promptField(fieldName string) {
 }
 
 func runBenchmark() {
-	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
 
-	numTransactions, err := strconv.Atoi(numTransactionsStr)
-	if err != nil {
-    	log.Fatalf("Error converting NO_OF_TRANSACTION to int: %v", err)
-	}
+	benchmark, err := LoadBenchmarkConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	tpsStr := LoadEnvVar("TPS")
-	tps, err := strconv.Atoi(tpsStr)
+	transaction, err := LoadTransactionConfig()
 	if err != nil {
-		log.Fatalf("Error converting TPS int: %v")
+		log.Fatalf("Failed to load transaction configuration: %v", err)
 	}
+	
+	numTransactions := benchmark.NumOfTransactions
+	tps := benchmark.Tps
+	network := benchmark.Network
 
 	startTime := time.Now()
 	var totalSendLatency time.Duration
@@ -185,7 +187,8 @@ func runBenchmark() {
 	
 
 	ctx := context.Background()
-	network := LoadEnvVar("NETWORK")
+
+	// NOTE - put this in client.go
 	var client *http.Client
 
 	switch network {
@@ -203,7 +206,7 @@ func runBenchmark() {
 		panic(err)
 	}
 
-	var senderAddressHex = LoadEnvVar("SENDER_ADDRESS")
+	var senderAddressHex = transaction.Payer.Address
 	senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
 	if err != nil {
 		panic(err)

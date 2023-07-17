@@ -1,0 +1,21 @@
+scriptPath: "/path/to/script.cdc"
+gasLimit: 100
+scriptArguments:
+  amount:
+    type: "UFix64"
+    value: "1.234"
+  recipient:
+    type: "Address"
+    value: "1ba7234d25ebb0c0"
+payer:
+  useSameAccount: false
+  address: "281f767391b4bf7f"
+  privateKey: "a715a335585463594277883a00bd1632d7d65b395677c727d9db51232a0ce2c6"
+proposer:
+  useSameAccount: false
+  address: "0x1234567890abcdef"
+  privateKey: "proposerprivatekey123"
+authorizer:
+  useSameAccount: false
+  address: "0xabcdef1234567890"
+  privateKey: "authorizerprivatekey123"
