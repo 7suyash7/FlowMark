@@ -48,12 +48,11 @@ func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Tim
 	} else {
 		avgSendLatency = totalSendLatency / time.Duration(successfulTransactions)
 		avgSealLatency = totalSealLatency / time.Duration(successfulTransactions)
-		averageLatency = (totalSendLatency + totalSealLatency) / time.Duration(successfulTransactions)	
+		averageLatency = (minLatency + maxLatency) / time.Duration(successfulTransactions)	
 	}
 	sealRate := float64(numTransactions) / totalSealLatency.Seconds()
 	benchmarkTime := endTime.Sub(startTime)
 	sendRate := float64(numTransactions) / benchmarkTime.Seconds()
-
 	stats.SendRate = sendRate
 	stats.SealRate = sealRate
 	stats.AverageSendLatency = avgSendLatency

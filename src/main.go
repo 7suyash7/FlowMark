@@ -159,60 +159,46 @@ func promptField(fieldName string) {
 	os.Setenv(fieldName, value)
 }
 
-func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier) {
-	for {
-		result, err := client.GetTransactionResult(ctx, txID)
-		if err != nil {
-			// log.Printf("Failed to get transaction result for %s: %v", txID, err)
-			continue
-		} else if result.Status == flow.TransactionStatusSealed {
-			if result.Error != nil {
-				log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
-			} else {
-				log.Printf("Transaction %s sealed successfully", txID)
-			}
-			break
-		}
-
-		// Sleep for a while before checking again.
-		time.Sleep(1 * time.Second)
-	}
-}
-
-
 func runBenchmark() {
 
 	benchmark, err := LoadBenchmarkConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
+	if err != nil {
+		log.Fatal("Failed to load benchmark configuration: %v", err)
+	}
 
 	transaction, err := LoadTransactionConfig()
 	if err != nil {
 		log.Fatalf("Failed to load transaction configuration: %v", err)
 	}
-	
-	numTransactions := benchmark.NumOfTransactions
-	tps := benchmark.Tps
-	network := benchmark.Network
 
-	startTime := time.Now()
-	var totalSendLatency time.Duration
-	var totalSealLatency time.Duration
-	maxLatency := time.Duration(0)
-	minLatency := time.Duration(math.MaxInt64)
-	zeroLatency := time.Duration(0)
-	maxSealLatency := time.Duration(0)
-	minSealLatency := time.Duration(math.MaxInt64)
-	successfulTransactions := 0
-	
+	// Extract network from benchmark configuration.
+	network := benchmark.Test.Network
 
-	ctx := context.Background()
+	allStats := make([]TransactionStats, 0)
 
-	// NOTE - put this in client.go
-	var client *http.Client
+	for _, round := range benchmark.Test.Rounds {
+		fmt.Printf("Starting round: %s\n", round.Label)
 
-	switch network {
+		// Extract numTransactions and tps from each round in the benchmark configuration.
+		numTransactions := round.RateControl.TxNumber
+		tps := round.RateControl.Tps
+
+		// startTime := time.Now()
+		var totalSendLatency time.Duration
+		var totalSealLatency time.Duration
+		maxLatency := time.Duration(0)
+		minLatency := time.Duration(math.MaxInt64)
+		zeroLatency := time.Duration(0)
+		maxSealLatency := time.Duration(0)
+		minSealLatency := time.Duration(math.MaxInt64)
+		successfulTransactions := 0
+
+		ctx := context.Background()
+
+		// NOTE - put this in client.go
+		var client *http.Client
+
+		switch network {
 		case "emulator":
 			client, err = InitializeClient(http.EmulatorHost)
 		case "testnet":
@@ -221,114 +207,131 @@ func runBenchmark() {
 			client, err = InitializeClient(http.MainnetHost)
 		default:
 			panic("No Network Selected! Select mainnet, testnet, or emulator in .env under the network variable")
-	}
+		}
 
-	if err != nil {
-		panic(err)
-	}
+		if err != nil {
+			panic(err)
+		}
 
-	var senderAddressHex = transaction.Payer.Address
-	senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
-	if err != nil {
-		panic(err)
-	}
+		var senderAddressHex = transaction.Payer.Address
+		senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
+		if err != nil {
+			panic(err)
+		}
 
-	sequenceNumber := GetInitialSequenceNumber(senderAccount)
+		sequenceNumber := GetInitialSequenceNumber(senderAccount)
 
-	numOfKeys := len(senderAccount.Keys)
-	keysToBeGenerated := numTransactions - numOfKeys
-	if keysToBeGenerated > 0 {
-		fmt.Println(chalk.Green.Color("Generating KeyIDs for transaction..."))
-		AddKeys(ctx, client, senderAccount,sequenceNumber, keysToBeGenerated)
-		time.Sleep(100 * time.Millisecond)
-		fmt.Println(chalk.Green.Color("Keys Generated!"))
-	}
-	
-	stats := NewTransactionStats()
-    transactionIDs := make([]flow.Identifier, 0, numTransactions)	
+		numOfKeys := len(senderAccount.Keys)
+		keysToBeGenerated := numTransactions - numOfKeys
+		if keysToBeGenerated > 0 {
+			fmt.Println(chalk.Green.Color("Generating KeyIDs for transaction..."))
+			AddKeys(ctx, client, senderAccount,sequenceNumber, keysToBeGenerated)
+			time.Sleep(100 * time.Millisecond)
+			fmt.Println(chalk.Green.Color("Keys Generated!"))
+		}
 
-	senderAccount, err = GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
+		stats := NewTransactionStats()
+		transactionIDs := make([]flow.Identifier, 0, numTransactions)
+
+		senderAccount, err = GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
 		if err != nil {
 			panic(err)
 		}
 
 		var wg sync.WaitGroup
 
-	timePerTransaction := time.Second / time.Duration(tps)
-		
+		timePerTransaction := time.Second / time.Duration(tps)
+		startTime := time.Now()
+		var endTime time.Time
 		for i := 0; i < numTransactions; i++ {
 			wg.Add(1)
 			go func(i int) {
 				defer wg.Done()
-		
+
 				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
-		
-				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
-			
+
+				latency, sealLatency, txHex, txID, txEndTime, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
+				
+				// added rn
+				if !(txEndTime == time.Time{}) {
+					endTime = txEndTime
+				}
+
+				// endTime = txEndTime
+				fmt.Println("endtime: %s", endTime)
+				fmt.Println("startime: %s", startTime)
+
 				if success {
 					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
 				} else {
 					fmt.Println(chalk.Red.Color("Transaction not sent successfully"))
 				}
-		
+
 				transactionIDs = append(transactionIDs, txID)
 				totalSendLatency += latency
 				totalSealLatency += sealLatency
 				stats = UpdateStats(stats, txHex)
-		
+
 				if latency > maxLatency {
 					maxLatency = latency
 				}
-		
-			if latency < minLatency && latency != zeroLatency {
+
+				if latency < minLatency && latency != zeroLatency {
 					minLatency = latency
 				}
-		
+
 				if sealLatency > maxSealLatency {
 					maxSealLatency = sealLatency
 				}
-		
-			if sealLatency < minSealLatency && latency != zeroLatency {
+
+				if sealLatency < minSealLatency && latency != zeroLatency {
 					minSealLatency = sealLatency
 				}
 			}(i)
-		
-		time.Sleep(timePerTransaction)
+
+			time.Sleep(timePerTransaction)
 		}
-		
+
 		wg.Wait()
-		
-	endTime := time.Now()
+		// removed rn
+		// endTime := time.Now()
 
-	time.Sleep(5 * time.Second)
-	numTransactions = len(transactionIDs)
-	progress := mpb.New(mpb.WithWidth(60))
-	bar := progress.AddBar(int64(numTransactions), mpb.BarStyle("[=>-|"), mpb.PrependDecorators(
-		decor.Name("Transactions ", decor.WC{}),
-		decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
-	), mpb.AppendDecorators(
-		decor.EwmaETA(decor.ET_STYLE_GO, 90),
-	))
+		time.Sleep(5 * time.Second)
+		numTransactions = len(transactionIDs)
+		progress := mpb.New(mpb.WithWidth(60))
+		bar := progress.AddBar(int64(numTransactions), mpb.BarStyle("[=>-|"), mpb.PrependDecorators(
+			decor.Name("Transactions ", decor.WC{}),
+			decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
+		), mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, 90),
+		))
 
-	// successfulTransactions := 0
-	for _, txID := range transactionIDs {
-		result, err := client.GetTransactionResult(ctx, txID)
-		if err != nil {
-			log.Printf("Failed to get transaction result for %s: %v", txID, err)
-		} else {
-			if result.Status == flow.TransactionStatusSealed && result.Error == nil {
-				successfulTransactions++
+		// successfulTransactions := 0
+		for _, txID := range transactionIDs {
+			result, err := client.GetTransactionResult(ctx, txID)
+			if err != nil {
+				log.Printf("Failed to get transaction result for %s: %v", txID, err)
+			} else {
+				if result.Status == flow.TransactionStatusSealed && result.Error == nil {
+					successfulTransactions++
+				}
 			}
+			bar.Increment()
 		}
-		bar.Increment()
+		progress.Wait()
+
+		// At the end of each round, calculate the stats, print the stats table and generate the report
+        stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, totalSealLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
+        PrintStatsTable(stats)
+        GenerateReport(stats, round)
+
+        // Append the stats of the current round to the allStats slice
+        allStats = append(allStats, stats)
+
+		fmt.Printf("Finished round: %s\n", round.Label)
 	}
-	progress.Wait()
 
 	fmt.Println(colorstring.Color("[green]Generating results..."))
+	PrintSummary(allStats, benchmark.Test.Rounds)
 
-
-	stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, totalSealLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
-
-	PrintStatsTable(stats)
-	GenerateReport(stats)
 }

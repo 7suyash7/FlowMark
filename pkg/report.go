@@ -5,49 +5,32 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-
-	"strconv"
-	"log"
-
-
 	"github.com/olekukonko/tablewriter"
 )
 
 type TemplateData struct {
-	SendRate       float64
-	SealRate       float64
-	AvgSendLatency string
-	AvgSealLatency string
-	AvgLatency 	   string
-	MinLatency     string
-	MaxLatency     string
-	Throughput     float64
-	TxHexes        []string
-	Network        string
-    Config         Configuration
-	TotalTx        int
-	SuccessfulTx   int
-	FailedTx       int
+	Label           string
+	SendRate        float64
+	SealRate        float64
+	AvgSendLatency  string
+	AvgSealLatency  string
+	AvgLatency      string
+	MinLatency      string
+	MaxLatency      string
+	TotalTx         int
+	SuccessfulTx    int
+	FailedTx        int
+	Network         string
+	Round           Round
 }
-
-type Configuration struct {
-	Network            string
-	NumTransactions    string
-	TransactionsPerSecond string
-	RecipientAddress   string
-	SenderAddress      string
-	SenderPrivateKey   string
-}
-
-
 
 func PrintStatsTable(stats TransactionStats) {
 	table := tablewriter.NewWriter(os.Stdout)
 
 	table.SetHeader([]string{"Metric", "Value"})
 
-	avgSendLatency := fmt.Sprintf("%.1f ms", stats.AverageSendLatency.Seconds()*1000)
-	avgSealLatency := fmt.Sprintf("%.1f ms", stats.AverageSealLatency.Seconds()*1000)
+	// avgSendLatency := fmt.Sprintf("%.1f ms", stats.AverageSendLatency.Seconds()*1000)
+	// avgSealLatency := fmt.Sprintf("%.1f ms", stats.AverageSealLatency.Seconds()*1000)
 	averageLatency := fmt.Sprintf("%.1f ms", stats.AverageLatency.Seconds()*1000)
 	minLatency := fmt.Sprintf("%.1f ms", stats.MinLatency.Seconds()*1000)
 	maxLatency := fmt.Sprintf("%.1f ms", stats.MaxLatency.Seconds()*1000)
@@ -56,8 +39,8 @@ func PrintStatsTable(stats TransactionStats) {
 
 	table.Append([]string{"Send Rate (tps)", fmt.Sprintf("%.2f", stats.SendRate)})
 	table.Append([]string{"Seal Rate (tps)", fmt.Sprintf("%.2f", stats.SealRate)})
-	table.Append([]string{"Average Send Latency", avgSendLatency})
-	table.Append([]string{"Average Seal Latency", avgSealLatency})
+	// table.Append([]string{"Average Send Latency", avgSendLatency})
+	// table.Append([]string{"Average Seal Latency", avgSealLatency})
 	table.Append([]string{"Minimum Network Latency", minLatency})
 	table.Append([]string{"Maximum Network Latency", maxLatency})
 	table.Append([]string{"Average Network Latency", averageLatency})
@@ -68,57 +51,63 @@ func PrintStatsTable(stats TransactionStats) {
 	table.Render()
 }
 
+func PrintSummary(allStats []TransactionStats, rounds []Round) {
+    table := tablewriter.NewWriter(os.Stdout)
+    table.SetHeader([]string{"Name", "Send Rate (tps)", "Seal Rate", "Max Latency", "Min Latency", "Avg Latency", "Successful Transactions", "Failed Transactions"})
 
-func GenerateReport(stats TransactionStats) {
-	avgSendLatency := fmt.Sprintf("%.1f ms", stats.AverageSendLatency.Seconds()*1000)
-	avgSealLatency := fmt.Sprintf("%.1f ms", stats.AverageSealLatency.Seconds()*1000)
-	averageLatency := fmt.Sprintf("%.1f ms", stats.AverageLatency.Seconds()*1000)
-	minLatency := fmt.Sprintf("%.1f ms", stats.MinLatency.Seconds()*1000)
-	maxLatency := fmt.Sprintf("%.1f ms", stats.MaxLatency.Seconds()*1000)
+    for i, stats := range allStats {
+        // avgSendLatency := fmt.Sprintf("%.1f ms", stats.AverageSendLatency.Seconds()*1000)
+        // avgSealLatency := fmt.Sprintf("%.1f ms", stats.AverageSealLatency.Seconds()*1000)
+        averageLatency := fmt.Sprintf("%.1f ms", stats.AverageLatency.Seconds()*1000)
+        minLatency := fmt.Sprintf("%.1f ms", stats.MinLatency.Seconds()*1000)
+        maxLatency := fmt.Sprintf("%.1f ms", stats.MaxLatency.Seconds()*1000)
 
-	benchmark, err := LoadBenchmarkConfig()
-		if err != nil {
-			log.Fatal(err)
-		}
+        table.Append([]string{
+            rounds[i].Label,
+            fmt.Sprintf("%.2f", stats.SendRate),
+            fmt.Sprintf("%.2f", stats.SealRate),
+            maxLatency,
+            minLatency,
+            averageLatency,
+            fmt.Sprintf("%d", stats.SuccessfulTx),
+            fmt.Sprintf("%d", stats.FailedTx),
+        })
+    }
 
-	transaction, err := LoadTransactionConfig()
-	if err != nil {
-		log.Fatalf("Failed to load transaction configuration: %v", err)
-	}
+    table.Render()
+}
 
-	// Load configuration data
-	config := Configuration{
-		Network:            benchmark.Network,
-		NumTransactions:    strconv.Itoa(benchmark.NumOfTransactions),
-		TransactionsPerSecond: strconv.Itoa(benchmark.Tps),
-		RecipientAddress:   transaction.ScriptArguments.Recipient.Value,
-		SenderAddress:      transaction.Payer.Address,
-		SenderPrivateKey:   transaction.Payer.PrivateKey,
-	}
 
-	// Add config to template data
-	data := TemplateData{
-		SendRate:     stats.SendRate,
-		SealRate:     stats.SealRate,
-		AvgSendLatency: avgSendLatency,
-		AvgSealLatency: avgSealLatency,
-		AvgLatency:   averageLatency,
-		MinLatency:   minLatency,
-		MaxLatency:   maxLatency,
-		TxHexes:      stats.TxHexes,
-		TotalTx:	  stats.TotalTx,
-		SuccessfulTx: stats.SuccessfulTx,
-		FailedTx: 	  stats.TotalTx - stats.SuccessfulTx,
-		Network:      stats.Network,
-		Config:       config,
-	}
+func GenerateReport(stats TransactionStats, round Round) {
+    avgSendLatency := fmt.Sprintf("%.1f ms", stats.AverageSendLatency.Seconds()*1000)
+    avgSealLatency := fmt.Sprintf("%.1f ms", stats.AverageSealLatency.Seconds()*1000)
+    averageLatency := fmt.Sprintf("%.1f ms", stats.AverageLatency.Seconds()*1000)
+    minLatency := fmt.Sprintf("%.1f ms", stats.MinLatency.Seconds()*1000)
+    maxLatency := fmt.Sprintf("%.1f ms", stats.MaxLatency.Seconds()*1000)
 
-	filename := "report.html"
-	file, err := os.Create(filename)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
+    // Load configuration data
+    data := TemplateData{
+        Label:           round.Label,
+        SendRate:        stats.SendRate,
+        SealRate:        stats.SealRate,
+        AvgSendLatency:  avgSendLatency,
+        AvgSealLatency:  avgSealLatency,
+        AvgLatency:      averageLatency,
+        MinLatency:      minLatency,
+        MaxLatency:      maxLatency,
+        TotalTx:         stats.TotalTx,
+        SuccessfulTx:    stats.SuccessfulTx,
+        FailedTx:        stats.TotalTx - stats.SuccessfulTx,
+        Network:         stats.Network,
+        Round:           round,
+    }
+
+    filename := "report.html"
+    file, err := os.Create(filename)
+    if err != nil {
+        panic(err)
+    }
+    defer file.Close()
 
 	funcMap := template.FuncMap{
 		"add": func(a, b int) int {
@@ -217,11 +206,7 @@ func GenerateReport(stats TransactionStats) {
 	  <div class="container">
 		<div class="config">
 		  <h2>Configuration</h2>
-		  <p>Network: {{.Config.Network}}</p>
-		  <p>NumTransactions: {{.Config.NumTransactions}}</p>
-		  <p>TransactionsPerSecond: {{.Config.TransactionsPerSecond}}</p>
-		  <p>RecipientAddress: {{.Config.RecipientAddress}}</p>
-		  <p class="border-bottom">SenderAddress: {{.Config.SenderAddress}}</p>
+		  
 		  <p><a href="#SendRate">SendRate</a>: {{.SendRate}}</p>
 		  <p><a href="#SealRate">SealRate</a>: {{.SealRate}}</p>
 		  <p><a href="#AvgSendLatency">Average Send Latency</a>: {{.AvgSendLatency}}</p>
@@ -316,3 +301,10 @@ func GenerateReport(stats TransactionStats) {
 	fmt.Printf("Benchmark Complete!\n")
 	fmt.Printf("For more information, check out report at file://%s\n", absPath)
 }
+
+// removed configuration code from html
+// <p>Network: {{.Config.Network}}</p>
+		//   <p>NumTransactions: {{.Config.NumTransactions}}</p>
+		//   <p>TransactionsPerSecond: {{.Config.TransactionsPerSecond}}</p>
+		//   <p>RecipientAddress: {{.Config.RecipientAddress}}</p>
+		//   <p class="border-bottom">SenderAddress: {{.Config.SenderAddress}}</p>

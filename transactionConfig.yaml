@@ -9,13 +9,13 @@ scriptArguments:
     value: "1ba7234d25ebb0c0"
 payer:
   useSameAccount: false
-  address: "281f767391b4bf7f"
-  privateKey: "a715a335585463594277883a00bd1632d7d65b395677c727d9db51232a0ce2c6"
+  address: "eb3049ee87bea5db"
+  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"
 proposer:
   useSameAccount: false
-  address: "0x1234567890abcdef"
-  privateKey: "proposerprivatekey123"
+  address: "eb3049ee87bea5db"
+  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"
 authorizer:
   useSameAccount: false
-  address: "0xabcdef1234567890"
-  privateKey: "authorizerprivatekey123"
+  address: "eb3049ee87bea5db"
+  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"

@@ -1,23 +1,25 @@
-numOfTransactions: 100
-tps: 10
-network: "testnet"
-keyGeneration:
-  enabled: true
-  keysGenerated: 5
-concurrency:
-  enabled: true
-  maxConcurrency: 25
-  buffer: true
-  keyGeneration:
-    enabled: true
-    keysGenerated: 5
-reportingAndOutput:
-  generateReport: true
-  printStatsTable: true
-retrySettings:
-  enabled: true
-  maxRetryAttempts: 5
-  retryInterval: 1
-loggingAndErrorHandling:
-  enableLogging: true
-  enableErrorHandling: true
+test:
+  network: "testnet"
+  name: Test
+  description: >-
+    To benchmark transferring tokens between accounts.
+  workers:
+    number: 1
+  rounds:
+    - label: 50 txns with 10tps
+      description: >-
+        Transfer Tokens between accounts.
+      rateControl:  
+        txNumber: 50
+        tps: 20
+    # - label: 50 txns with 5tps
+    #   description: Test description for transfering money between accounts.
+    #   rateControl:
+    #     txNumber: 50
+    #     tps: 5
+    # - label: 50 txns with 10tps
+    #   description: >-
+    #     Transfer Tokens between accounts at a rate of 5 transaction per second.
+    #   rateControl:
+    #     txNumber: 50
+    #     tps: 10

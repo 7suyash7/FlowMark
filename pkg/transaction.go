@@ -16,7 +16,7 @@ import (
 
 
 
-func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int) (time.Duration, time.Duration, string, flow.Identifier, bool) {
+func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int) (time.Duration, time.Duration, string, flow.Identifier, time.Time, bool) {
     tx := flow.NewTransaction()
     transactionsss, err := LoadTransactionConfig()
         if err != nil {
@@ -72,7 +72,7 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
         // We failed to fetch the block even after retrying.
         // Print the error instead of panicking.
         fmt.Printf("Error fetching the block: %v\n", fetchErr)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
     
     tx.SetReferenceBlockID(latestBlock.ID)
@@ -84,12 +84,12 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     amount, err := cadence.NewUFix64("1.234")
     if err != nil {
         fmt.Printf("Error creating UFix64 amount: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
 
     if err = tx.AddArgument(amount); err != nil {
         fmt.Printf("Error adding amount argument: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
 
     recipient := cadence.NewAddress(flow.HexToAddress(recipientAddressHex))
@@ -97,7 +97,7 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     err = tx.AddArgument(recipient)
     if err != nil {
         fmt.Printf("Error adding recipient argument: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
 
     sigAlgo := crypto.ECDSA_P256
@@ -105,34 +105,34 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     privateKey, err := crypto.DecodePrivateKeyHex(sigAlgo, senderPrivateKeyHex)
     if err != nil {
         fmt.Printf("Error decoding private key: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
 
     signer, err := crypto.NewInMemorySigner(privateKey, hashAlgo)
     if err != nil {
         fmt.Printf("Error creating signer: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
 
     if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[0].Index, signer); err != nil {
         fmt.Printf("Error signing envelope: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
     if keyID != 0 {
         if err = tx.SignEnvelope(senderAccount.Address, senderAccount.Keys[keyID].Index, signer); err != nil {
             fmt.Printf("Error signing envelope: %v\n", err)
-            return 0, 0, "", flow.Identifier{}, false
+            return 0, 0, "", flow.Identifier{}, time.Time{}, false
         }
     }
 
     startTime := time.Now()
     if err = client.SendTransaction(ctx, *tx); err != nil {
         fmt.Printf("Error sending transaction: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, false
+        return 0, 0, "", flow.Identifier{}, time.Time{}, false
     }
     txEndTime := time.Now()
     txHex := tx.ID().Hex()
-    fmt.Printf("hex: %s \n", txHex)
+    // fmt.Printf("hex: %s \n", txHex)
 
     WaitForSeal(ctx, client, tx.ID())
     sealEndTime := time.Now()
@@ -140,7 +140,7 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     txLatency := txEndTime.Sub(startTime)
     sealLatency := sealEndTime.Sub(startTime)
 
-    return txLatency, sealLatency, txHex, tx.ID(), true
+    return txLatency, sealLatency, txHex, tx.ID(), txEndTime, true
 }
 
 func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, numOfKeysToAdd int) error {

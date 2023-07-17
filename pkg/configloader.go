@@ -9,42 +9,36 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type RateControl struct {
+	TxNumber int `yaml:"txNumber"`
+	Tps      int `yaml:"tps"`
+}
+
+type Round struct {
+	Label        string      `yaml:"label"`
+	Description  string      `yaml:"description"`
+	RateControl  RateControl `yaml:"rateControl"`
+}
+
+type Workers struct {
+	Number int `yaml:"number"`
+}
+
+type Test struct {
+	Network     string   `yaml:"network"`
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Workers     Workers  `yaml:"workers"`
+	Rounds      []Round  `yaml:"rounds"`
+}
 
 type Benchmark struct {
-	NumOfTransactions int `yaml:"numOfTransactions"`
-	Tps               int `yaml:"tps"`
-	Network           string `yaml:"network"`
-	KeyGeneration struct {
-		Enabled       bool `yaml:"enabled"`
-		KeysGenerated int  `yaml:"keysGenerated"`
-	} `yaml:"keyGeneration"`
-	Concurrency struct {
-		Enabled         bool `yaml:"enabled"`
-		MaxConcurrency  int  `yaml:"maxConcurrency"`
-		Buffer          bool `yaml:"buffer"`
-		KeyGeneration struct {
-			Enabled       bool `yaml:"enabled"`
-			KeysGenerated int  `yaml:"keysGenerated"`
-		} `yaml:"keyGeneration"`
-	} `yaml:"concurrency"`
-	ReportingAndOutput struct {
-		GenerateReport  bool `yaml:"generateReport"`
-		PrintStatsTable bool `yaml:"printStatsTable"`
-	} `yaml:"reportingAndOutput"`
-	RetrySettings struct {
-		Enabled          bool `yaml:"enabled"`
-		MaxRetryAttempts int  `yaml:"maxRetryAttempts"`
-		RetryInterval    int  `yaml:"retryInterval"`
-	} `yaml:"retrySettings"`
-	LoggingAndErrorHandling struct {
-		EnableLogging     bool `yaml:"enableLogging"`
-		EnableErrorHandling bool `yaml:"enableErrorHandling"`
-	} `yaml:"loggingAndErrorHandling"`
+	Test Test `yaml:"test"`
 }
 
 type Transaction struct {
 	ScriptPath       string `yaml:"scriptPath"`
-	GasLimit         int    `yaml:"gasLimit"`
+	GasLimit         uint64    `yaml:"gasLimit"`
 	ScriptArguments  struct {
 		Amount struct {
 			Type  string `yaml:"type"`
