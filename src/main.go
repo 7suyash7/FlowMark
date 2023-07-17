@@ -10,11 +10,18 @@ import (
 	"os"
 	"flag"
 	"strings"
+	"sync"
 	. "github.com/7suyash7/FlowMark/pkg"
 
 	"github.com/onflow/flow-go-sdk/access/http"
 	"github.com/onflow/flow-go-sdk"
 	"github.com/joho/godotenv"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
+	"github.com/ttacon/chalk"
+	// "github.com/vbauerster/mpb/v6"
+	// "github.com/vbauerster/mpb/v6/decor"
+	"github.com/mitchellh/colorstring"
 )
 
 func main() {
@@ -174,19 +181,35 @@ func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier)
 
 
 func runBenchmark() {
-	numTransactionsStr := LoadEnvVar("NO_OF_TRANSACTION")
-	numTransactions, err := strconv.Atoi(numTransactionsStr)
+
+	benchmark, err := LoadBenchmarkConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	transaction, err := LoadTransactionConfig()
 	if err != nil {
-    	log.Fatalf("Error converting NO_OF_TRANSACTION to int: %v", err)
+		log.Fatalf("Failed to load transaction configuration: %v", err)
 	}
+	
+	numTransactions := benchmark.NumOfTransactions
+	tps := benchmark.Tps
+	network := benchmark.Network
+
 	startTime := time.Now()
 	var totalSendLatency time.Duration
 	var totalSealLatency time.Duration
 	maxLatency := time.Duration(0)
 	minLatency := time.Duration(math.MaxInt64)
+	zeroLatency := time.Duration(0)
+	maxSealLatency := time.Duration(0)
+	minSealLatency := time.Duration(math.MaxInt64)
+	successfulTransactions := 0
+	
 
 	ctx := context.Background()
-	network := LoadEnvVar("NETWORK")
+
+	// NOTE - put this in client.go
 	var client *http.Client
 
 	switch network {
@@ -204,62 +227,105 @@ func runBenchmark() {
 		panic(err)
 	}
 
-	var senderAddressHex = LoadEnvVar("SENDER_ADDRESS")
-	senderAddress := flow.HexToAddress(senderAddressHex)
+	var senderAddressHex = transaction.Payer.Address
+	senderAccount, err := GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
+	if err != nil {
+		panic(err)
+	}
 
+	sequenceNumber := GetInitialSequenceNumber(senderAccount)
+
+	numOfKeys := len(senderAccount.Keys)
+	keysToBeGenerated := numTransactions - numOfKeys
+	if keysToBeGenerated > 0 {
+		fmt.Println(chalk.Green.Color("Generating KeyIDs for transaction..."))
+		AddKeys(ctx, client, senderAccount,sequenceNumber, keysToBeGenerated)
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println(chalk.Green.Color("Keys Generated!"))
+	}
+	
 	stats := NewTransactionStats()
     transactionIDs := make([]flow.Identifier, 0, numTransactions)	
 
-	for i := 0; i < numTransactions; i++ {
-		// Get the latest account info for this address
-		senderAccount, err := client.GetAccountAtLatestBlock(ctx, senderAddress)
+	senderAccount, err = GetAccount(ctx, client, flow.HexToAddress(senderAddressHex))
 		if err != nil {
-		panic("failed to fetch proposer account")
+			panic(err)
 		}
 
-		// Get the latest sequence number for this key
-		sequenceNumber := senderAccount.Keys[0].SequenceNumber
+		var wg sync.WaitGroup
 
-		sendStartTime := time.Now()
-		latency, txHex, txID := SendTransaction(ctx, client, senderAccount, sequenceNumber)
-		sendEndTime := time.Now()
-		totalSendLatency += sendEndTime.Sub(sendStartTime)
+	timePerTransaction := time.Second / time.Duration(tps)
 		
-		WaitForSeal(ctx, client, txID)
-		sealEndTime := time.Now()
-		totalSealLatency += sealEndTime.Sub(sendStartTime)
-
-		sequenceNumber++
-        transactionIDs = append(transactionIDs, txID)
+		for i := 0; i < numTransactions; i++ {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
 		
-		stats = UpdateStats(stats, latency, txHex)
-
-		if latency > maxLatency {
-			maxLatency = latency
+				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
+		
+				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
+			
+				if success {
+					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
+				} else {
+					fmt.Println(chalk.Red.Color("Transaction not sent successfully"))
+				}
+		
+				transactionIDs = append(transactionIDs, txID)
+				totalSendLatency += latency
+				totalSealLatency += sealLatency
+				stats = UpdateStats(stats, txHex)
+		
+				if latency > maxLatency {
+					maxLatency = latency
+				}
+		
+			if latency < minLatency && latency != zeroLatency {
+					minLatency = latency
+				}
+		
+				if sealLatency > maxSealLatency {
+					maxSealLatency = sealLatency
+				}
+		
+			if sealLatency < minSealLatency && latency != zeroLatency {
+					minSealLatency = sealLatency
+				}
+			}(i)
+		
+		time.Sleep(timePerTransaction)
 		}
-
-		if latency < minLatency {
-			minLatency = latency
-		}
-	}
-
+		
+		wg.Wait()
+		
 	endTime := time.Now()
 
-	time.Sleep(10 * time.Second)
-	fmt.Printf("Generating results...\n")
+	time.Sleep(5 * time.Second)
+	numTransactions = len(transactionIDs)
+	progress := mpb.New(mpb.WithWidth(60))
+	bar := progress.AddBar(int64(numTransactions), mpb.BarStyle("[=>-|"), mpb.PrependDecorators(
+		decor.Name("Transactions ", decor.WC{}),
+		decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
+	), mpb.AppendDecorators(
+		decor.EwmaETA(decor.ET_STYLE_GO, 90),
+	))
 
-    successfulTransactions := 0
+	// successfulTransactions := 0
 	for _, txID := range transactionIDs {
 		result, err := client.GetTransactionResult(ctx, txID)
 		if err != nil {
 			log.Printf("Failed to get transaction result for %s: %v", txID, err)
-			continue
+		} else {
+			if result.Status == flow.TransactionStatusSealed && result.Error == nil {
+				successfulTransactions++
+			}
 		}
-
-		if result.Status == flow.TransactionStatusSealed && result.Error == nil {
-			successfulTransactions++
-		}
+		bar.Increment()
 	}
+	progress.Wait()
+
+	fmt.Println(colorstring.Color("[green]Generating results..."))
+
 
 	stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, totalSealLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
 

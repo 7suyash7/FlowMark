@@ -11,6 +11,9 @@ type TransactionStats struct {
 	AverageSealLatency time.Duration
 	MinLatency        time.Duration
 	MaxLatency        time.Duration
+	MinSealLatency        time.Duration
+	MaxSealLatency        time.Duration
+	benchmarkTime		  time.Duration
 	AverageLatency	  time.Duration
 	SendThroughput    float64
 	SealThroughput    float64
@@ -28,19 +31,28 @@ func NewTransactionStats() TransactionStats {
 	}
 }
 
-func UpdateStats(stats TransactionStats, latency time.Duration, txHex string) TransactionStats {
+func UpdateStats(stats TransactionStats, txHex string) TransactionStats {
 	stats.TxHexes = append(stats.TxHexes, txHex)
 	return stats
 }
 
 func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Time, totalSendLatency time.Duration, totalSealLatency time.Duration, minLatency time.Duration, maxLatency time.Duration, numTransactions int, successfulTransactions int, Network string) TransactionStats {
 	// duration := endTime.Sub(startTime)
-	sendRate := float64(numTransactions) / totalSendLatency.Seconds()
+	var avgSendLatency time.Duration
+	var avgSealLatency time.Duration
+	var averageLatency time.Duration
+	if successfulTransactions == 0 {
+		avgSendLatency = 0
+		avgSealLatency = 0
+		averageLatency = 0
+	} else {
+		avgSendLatency = totalSendLatency / time.Duration(successfulTransactions)
+		avgSealLatency = totalSealLatency / time.Duration(successfulTransactions)
+		averageLatency = (totalSendLatency + totalSealLatency) / time.Duration(successfulTransactions)	
+	}
 	sealRate := float64(numTransactions) / totalSealLatency.Seconds()
-	avgSendLatency := totalSendLatency / time.Duration(numTransactions)
-	avgSealLatency := totalSealLatency / time.Duration(numTransactions)
-	averageLatency := (minLatency + maxLatency / 2)
-	// averageLatency := (totalSendLatency + totalSealLatency) / time.Duration(numTransactions)
+	benchmarkTime := endTime.Sub(startTime)
+	sendRate := float64(numTransactions) / benchmarkTime.Seconds()
 
 	stats.SendRate = sendRate
 	stats.SealRate = sealRate
@@ -53,6 +65,7 @@ func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Tim
 	stats.FailedTx = numTransactions - successfulTransactions
 	stats.Network = Network
 	stats.AverageLatency = averageLatency
+	stats.benchmarkTime = benchmarkTime
 
 	return stats
 }

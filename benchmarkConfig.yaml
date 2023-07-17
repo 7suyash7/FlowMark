@@ -1,0 +1,23 @@
+numOfTransactions: 100
+tps: 10
+network: "testnet"
+keyGeneration:
+  enabled: true
+  keysGenerated: 5
+concurrency:
+  enabled: true
+  maxConcurrency: 25
+  buffer: true
+  keyGeneration:
+    enabled: true
+    keysGenerated: 5
+reportingAndOutput:
+  generateReport: true
+  printStatsTable: true
+retrySettings:
+  enabled: true
+  maxRetryAttempts: 5
+  retryInterval: 1
+loggingAndErrorHandling:
+  enableLogging: true
+  enableErrorHandling: true
