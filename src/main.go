@@ -178,6 +178,7 @@ func runBenchmark() {
 	var totalSealLatency time.Duration
 	maxLatency := time.Duration(0)
 	minLatency := time.Duration(math.MaxInt64)
+	zeroLatency := time.Duration(0)
 	maxSealLatency := time.Duration(0)
 	minSealLatency := time.Duration(math.MaxInt64)
 	successfulTransactions := 0
@@ -255,7 +256,7 @@ func runBenchmark() {
 					maxLatency = latency
 				}
 		
-				if latency < minLatency {
+			if latency < minLatency && latency != zeroLatency {
 					minLatency = latency
 				}
 		
@@ -263,7 +264,7 @@ func runBenchmark() {
 					maxSealLatency = sealLatency
 				}
 		
-				if sealLatency < minSealLatency {
+			if sealLatency < minSealLatency && latency != zeroLatency {
 					minSealLatency = sealLatency
 				}
 			}(i)
