@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"time"
-	"fmt"
 )
 
 type TransactionStats struct {

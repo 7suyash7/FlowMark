@@ -11,45 +11,118 @@ import (
     "github.com/onflow/flow-go-sdk"
     "github.com/onflow/flow-go-sdk/access/http"
     "github.com/onflow/flow-go-sdk/crypto"
+	"io/ioutil"
+	"strconv"
 )
 
 
 
 
-func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int) (time.Duration, time.Duration, string, flow.Identifier, time.Time, bool) {
+func createCadenceValue(t string, value string) (cadence.Value, error) {
+	switch t {
+	case "Int8":
+		integer, err := strconv.ParseInt(value, 10, 8)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to int8: %w", err)
+		}
+		intValue := cadence.NewInt8(int8(integer))
+		return intValue, nil
+	case "UInt8":
+		uinteger, err := strconv.ParseUint(value, 10, 8)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to uint8: %w", err)
+		}
+		uintValue := cadence.NewUInt8(uint8(uinteger))
+		return uintValue, nil
+	case "Int16":
+		integer, err := strconv.ParseInt(value, 10, 16)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to int16: %w", err)
+		}
+		intValue := cadence.NewInt16(int16(integer))
+		return intValue, nil
+	case "UInt16":
+		uinteger, err := strconv.ParseUint(value, 10, 16)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to uint16: %w", err)
+		}
+		uintValue := cadence.NewUInt16(uint16(uinteger))
+		return uintValue, nil
+	case "Int32":
+		integer, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to int32: %w", err)
+		}
+		intValue := cadence.NewInt32(int32(integer))
+		return intValue, nil
+	case "UInt32":
+		uinteger, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to uint32: %w", err)
+		}
+		uintValue := cadence.NewUInt32(uint32(uinteger))
+		return uintValue, nil
+	case "Int64":
+		integer, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error converting string to int64: %w", err)
+		}
+		intValue := cadence.NewInt64(integer)
+		return intValue, nil
+	case "UInt64":
+		uinteger, err := strconv.ParseUint(value, 10, 64)
+        if err != nil {
+			return nil, fmt.Errorf("error converting string to uint64: %w", err)
+        }
+		uintValue := cadence.NewUInt64(uinteger)
+		return uintValue, nil
+
+	case "Address":
+		addressValue := cadence.BytesToAddress(flow.HexToAddress(value).Bytes())
+		return addressValue, nil
+	case "String":
+		stringValue := cadence.String(value)
+		return stringValue, nil
+	case "Bool":
+		boolValue, err := strconv.ParseBool(value)
+		if err != nil {
+			return nil, fmt.Errorf("error loading the boolean, make sure %s is a boolean", value)
+		}
+		boolCadenceValue := cadence.Bool(boolValue)
+		return boolCadenceValue, nil
+	case "Fix64":
+		fix64Value, err := cadence.NewFix64(value)
+		if err != nil {
+			return nil, err
+		}
+		return fix64Value, nil
+	case "UFix64":
+		ufix64Value, err := cadence.NewUFix64(value)
+		if err != nil {
+			return nil, err
+		}
+		return ufix64Value, nil
+	}
+
+	return nil, fmt.Errorf("unsupported type: %s", t)
+}
+
+func SendTransaction(ctx context.Context, client *http.Client, senderAccount *flow.Account, sequenceNumber uint64, keyID int, transaction Transaction) (time.Duration, time.Duration, string, flow.Identifier, time.Time, bool) {
     tx := flow.NewTransaction()
     transactionsss, err := LoadTransactionConfig()
         if err != nil {
             log.Fatalf("Failed to load transaction configuration: %v", err)
         }
-    var recipientAddressHex = transactionsss.ScriptArguments.Recipient.Value
     var senderPrivateKeyHex = transactionsss.Payer.PrivateKey
 
-    script := `
-    import FungibleToken from 0x9a0766d93b6608b7
-    import FlowToken from 0x7e60df042a9c0868
-
-    transaction(amount: UFix64, recipient: Address) {
-        let sentVault: @FungibleToken.Vault
-        prepare(signer: AuthAccount) {
-        let vaultRef = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
-            ?? panic("failed to borrow reference to sender vault")
-
-        self.sentVault <- vaultRef.withdraw(amount: amount)
-        }
-
-        execute {
-        let receiverRef =  getAccount(recipient)
-            .getCapability(/public/flowTokenReceiver)
-            .borrow<&{FungibleToken.Receiver}>()
-            ?? panic("failed to borrow reference to recipient vault")
-
-        receiverRef.deposit(from: <-self.sentVault)
-        }
+	script, err := ioutil.ReadFile(transaction.ScriptPath)
+	if err != nil {
+		panic("script path wrong!")
     }
-    `
+
     tx.SetScript([]byte(script))
-    tx.SetGasLimit(100)
+    tx.SetGasLimit(transaction.GasLimit)
+    
 
     var latestBlock *flow.BlockHeader
     var fetchErr error
@@ -81,23 +154,17 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     tx.SetPayer(senderAccount.Address)
     tx.AddAuthorizer(senderAccount.Address)
 
-    amount, err := cadence.NewUFix64("1.234")
-    if err != nil {
-        fmt.Printf("Error creating UFix64 amount: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, time.Time{}, false
-    }
+	for _, arg := range transaction.ScriptArguments {
+		argType := arg.Type
+		argValue := arg.Value
+		
+		cadenceValue, err := createCadenceValue(argType, argValue)
+			if err != nil {
+					fmt.Println("Error creating Cadence value:", err)
+					continue
+			}
 
-    if err = tx.AddArgument(amount); err != nil {
-        fmt.Printf("Error adding amount argument: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, time.Time{}, false
-    }
-
-    recipient := cadence.NewAddress(flow.HexToAddress(recipientAddressHex))
-
-    err = tx.AddArgument(recipient)
-    if err != nil {
-        fmt.Printf("Error adding recipient argument: %v\n", err)
-        return 0, 0, "", flow.Identifier{}, time.Time{}, false
+		tx.AddArgument(cadenceValue)
     }
 
     sigAlgo := crypto.ECDSA_P256
@@ -178,7 +245,7 @@ func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Accou
 		}
 	`
 	tx.SetScript([]byte(script))
-	tx.SetGasLimit(100)
+	tx.SetGasLimit(100000)
 
 	latestBlock, err := client.GetLatestBlockHeader(ctx, true)
 	if err != nil {

@@ -38,16 +38,11 @@ type Benchmark struct {
 
 type Transaction struct {
 	ScriptPath       string `yaml:"scriptPath"`
-	GasLimit         uint64    `yaml:"gasLimit"`
-	ScriptArguments  struct {
-		Amount struct {
-			Type  string `yaml:"type"`
-			Value string `yaml:"value"`
-		} `yaml:"amount"`
-		Recipient struct {
-			Type  string `yaml:"type"`
-			Value string `yaml:"value"`
-		} `yaml:"recipient"`
+	GasLimit         uint64 `yaml:"gasLimit"`
+	ScriptArguments  map[string]struct {
+		Name  string `yaml:"name"`
+		Type  string `yaml:"type"`
+		Value string `yaml:"value"`
 	} `yaml:"scriptArguments"`
 	Payer struct {
 		UseSameAccount bool   `yaml:"useSameAccount"`
@@ -55,9 +50,10 @@ type Transaction struct {
 		PrivateKey     string `yaml:"privateKey"`
 	} `yaml:"payer"`
 	Proposer struct {
-		UseSameAccount bool   `yaml:"useSameAccount"`
-		Address        string `yaml:"address"`
-		PrivateKey     string `yaml:"privateKey"`
+		UseSameAccount   bool   `yaml:"useSameAccount"`
+		Address          string `yaml:"address"`
+		PrivateKey       string `yaml:"privateKey"`
+		ProposerKeyIndex int    `yaml:"proposerKeyIndex"`
 	} `yaml:"proposer"`
 	Authorizer struct {
 		UseSameAccount bool   `yaml:"useSameAccount"`

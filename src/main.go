@@ -16,6 +16,8 @@ import (
 	"github.com/onflow/flow-go-sdk/access/http"
 	"github.com/onflow/flow-go-sdk"
 	"github.com/joho/godotenv"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
 	"github.com/ttacon/chalk"
 	"github.com/mitchellh/colorstring"
 )
@@ -246,8 +248,8 @@ func runBenchmark() {
 
 				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
 
-				latency, sealLatency, txHex, txID, txEndTime, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
-				
+				latency, sealLatency, txHex, txID, txEndTime, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID, *transaction)
+
 				// added rn
 				if !(txEndTime == time.Time{}) {
 					endTime = txEndTime
