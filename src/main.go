@@ -16,11 +16,7 @@ import (
 	"github.com/onflow/flow-go-sdk/access/http"
 	"github.com/onflow/flow-go-sdk"
 	"github.com/joho/godotenv"
-	"github.com/vbauerster/mpb"
-	"github.com/vbauerster/mpb/decor"
 	"github.com/ttacon/chalk"
-	// "github.com/vbauerster/mpb/v6"
-	// "github.com/vbauerster/mpb/v6/decor"
 	"github.com/mitchellh/colorstring"
 )
 
@@ -159,27 +155,6 @@ func promptField(fieldName string) {
 	os.Setenv(fieldName, value)
 }
 
-func WaitForSeal(ctx context.Context, client *http.Client, txID flow.Identifier) {
-	for {
-		result, err := client.GetTransactionResult(ctx, txID)
-		if err != nil {
-			// log.Printf("Failed to get transaction result for %s: %v", txID, err)
-			continue
-		} else if result.Status == flow.TransactionStatusSealed {
-			if result.Error != nil {
-				log.Printf("Transaction %s sealed with error: %v", txID, result.Error)
-			} else {
-				log.Printf("Transaction %s sealed successfully", txID)
-			}
-			break
-		}
-
-		// Sleep for a while before checking again.
-		time.Sleep(1 * time.Second)
-	}
-}
-
-
 func runBenchmark() {
 
 	benchmark, err := LoadBenchmarkConfig()
@@ -205,6 +180,8 @@ func runBenchmark() {
 	maxSealLatency := time.Duration(0)
 	minSealLatency := time.Duration(math.MaxInt64)
 	successfulTransactions := 0
+	timePerTransaction := time.Second / time.Duration(tps)
+
 	
 
 	ctx := context.Background()
@@ -252,77 +229,51 @@ func runBenchmark() {
 			panic(err)
 		}
 
-		var wg sync.WaitGroup
-
-	timePerTransaction := time.Second / time.Duration(tps)
+	var wg sync.WaitGroup	
+	for i := 0; i < numTransactions; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+	
+			sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
+	
+			latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
 		
-		for i := 0; i < numTransactions; i++ {
-			wg.Add(1)
-			go func(i int) {
-				defer wg.Done()
-		
-				sequenceNumber, keyID := GetSequenceNumber(senderAccount, i)
-		
-				latency, sealLatency, txHex, txID, success := SendTransaction(ctx, client, senderAccount, sequenceNumber, keyID)
-			
-				if success {
-					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
-				} else {
-					fmt.Println(chalk.Red.Color("Transaction not sent successfully"))
-				}
-		
-				transactionIDs = append(transactionIDs, txID)
-				totalSendLatency += latency
-				totalSealLatency += sealLatency
-				stats = UpdateStats(stats, txHex)
-		
-				if latency > maxLatency {
-					maxLatency = latency
-				}
-		
-			if latency < minLatency && latency != zeroLatency {
-					minLatency = latency
-				}
-		
-				if sealLatency > maxSealLatency {
-					maxSealLatency = sealLatency
-				}
-		
-			if sealLatency < minSealLatency && latency != zeroLatency {
-					minSealLatency = sealLatency
-				}
-			}(i)
-		
-		time.Sleep(timePerTransaction)
-		}
-		
-		wg.Wait()
+			if success {
+				successfulTransactions++
+				fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
+			} else {
+				fmt.Println(chalk.Red.Color("Transaction not sent successfully"))
+			}
+	
+			transactionIDs = append(transactionIDs, txID)
+			totalSendLatency += latency
+			totalSealLatency += sealLatency
+			stats = UpdateStats(stats, txHex)
+	
+			if latency > maxLatency {
+				maxLatency = latency
+			}
+	
+		if latency < minLatency && latency != zeroLatency {
+				minLatency = latency
+			}
+	
+			if sealLatency > maxSealLatency {
+				maxSealLatency = sealLatency
+			}
+	
+		if sealLatency < minSealLatency && latency != zeroLatency {
+				minSealLatency = sealLatency
+			}
+		}(i)
+	
+	time.Sleep(timePerTransaction)
+	}
+	
+	wg.Wait()
 		
 	endTime := time.Now()
-
-	time.Sleep(5 * time.Second)
-	numTransactions = len(transactionIDs)
-	progress := mpb.New(mpb.WithWidth(60))
-	bar := progress.AddBar(int64(numTransactions), mpb.BarStyle("[=>-|"), mpb.PrependDecorators(
-		decor.Name("Transactions ", decor.WC{}),
-		decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
-	), mpb.AppendDecorators(
-		decor.EwmaETA(decor.ET_STYLE_GO, 90),
-	))
-
-	// successfulTransactions := 0
-	for _, txID := range transactionIDs {
-		result, err := client.GetTransactionResult(ctx, txID)
-		if err != nil {
-			log.Printf("Failed to get transaction result for %s: %v", txID, err)
-		} else {
-			if result.Status == flow.TransactionStatusSealed && result.Error == nil {
-				successfulTransactions++
-			}
-		}
-		bar.Increment()
-	}
-	progress.Wait()
 
 	fmt.Println(colorstring.Color("[green]Generating results..."))
 

@@ -1,4 +1,4 @@
-numOfTransactions: 100
+numOfTransactions: 10
 tps: 10
 network: "testnet"
 keyGeneration:
