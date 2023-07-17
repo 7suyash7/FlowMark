@@ -39,11 +39,11 @@ func UpdateStats(stats TransactionStats, txHex string) TransactionStats {
 func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Time, totalSendLatency time.Duration, totalSealLatency time.Duration, minLatency time.Duration, maxLatency time.Duration, numTransactions int, successfulTransactions int, Network string) TransactionStats {
 	// duration := endTime.Sub(startTime)
 	sealRate := float64(numTransactions) / totalSealLatency.Seconds()
-	avgSendLatency := totalSendLatency / time.Duration(numTransactions)
-	avgSealLatency := totalSealLatency / time.Duration(numTransactions)
+	avgSendLatency := totalSendLatency / time.Duration(successfulTransactions)
+	avgSealLatency := totalSealLatency / time.Duration(successfulTransactions)
 	benchmarkTime := endTime.Sub(startTime)
 	sendRate := float64(numTransactions) / benchmarkTime.Seconds()
-	averageLatency := (totalSendLatency + totalSealLatency) / time.Duration(numTransactions)
+	averageLatency := (totalSendLatency + totalSealLatency) / time.Duration(successfulTransactions)
 
 	stats.SendRate = sendRate
 	stats.SealRate = sealRate
