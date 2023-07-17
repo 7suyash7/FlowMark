@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"time"
+	"fmt"
 )
 
 type TransactionStats struct {
@@ -37,14 +38,12 @@ func UpdateStats(stats TransactionStats, txHex string) TransactionStats {
 }
 
 func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Time, totalSendLatency time.Duration, totalSealLatency time.Duration, minLatency time.Duration, maxLatency time.Duration, numTransactions int, successfulTransactions int, Network string) TransactionStats {
-	// duration := endTime.Sub(startTime)
 	var avgSendLatency time.Duration
 	var avgSealLatency time.Duration
 	var averageLatency time.Duration
 	if successfulTransactions == 0 {
 		avgSendLatency = 0
 		avgSealLatency = 0
-		averageLatency = 0
 	} else {
 		avgSendLatency = totalSendLatency / time.Duration(successfulTransactions)
 		avgSealLatency = totalSealLatency / time.Duration(successfulTransactions)

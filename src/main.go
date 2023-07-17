@@ -16,11 +16,7 @@ import (
 	"github.com/onflow/flow-go-sdk/access/http"
 	"github.com/onflow/flow-go-sdk"
 	"github.com/joho/godotenv"
-	"github.com/vbauerster/mpb"
-	"github.com/vbauerster/mpb/decor"
 	"github.com/ttacon/chalk"
-	// "github.com/vbauerster/mpb/v6"
-	// "github.com/vbauerster/mpb/v6/decor"
 	"github.com/mitchellh/colorstring"
 )
 
