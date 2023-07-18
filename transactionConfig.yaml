@@ -1,16 +1,20 @@
-scriptPath: "/path/to/script.cdc"
-gasLimit: 100000
+scriptPath: "script/sendFlow.cdc"
+gasLimit: 1000000
 scriptArguments:
   amount:
+    name: "amount"
     type: "UFix64"
     value: "1.234"
   recipient:
+    name: "recipient"
     type: "Address"
-    value: "1ba7234d25ebb0c0"
+    value: "01cf0e2f2f715450"
 payer:
   useSameAccount: true
   address: "xxxxxxxxxxxxxxxxx"
   privateKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  address: "f8d6e0586b0a20c7"
+  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"
 proposer:
   useSameAccount: true
   address: "xxxxxxxxxxxxxxxxx"
