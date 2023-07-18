@@ -13,8 +13,6 @@ payer:
   useSameAccount: true
   address: "xxxxxxxxxxxxxxxxx"
   privateKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  address: "f8d6e0586b0a20c7"
-  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"
 proposer:
   useSameAccount: true
   address: "xxxxxxxxxxxxxxxxx"
