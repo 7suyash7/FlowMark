@@ -16,6 +16,8 @@ import (
 	"github.com/onflow/flow-go-sdk/access/http"
 	"github.com/onflow/flow-go-sdk"
 	"github.com/joho/godotenv"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
 	"github.com/ttacon/chalk"
 	"github.com/mitchellh/colorstring"
 )
@@ -319,15 +321,14 @@ func runBenchmark() {
 		// At the end of each round, calculate the stats, print the stats table and generate the report
         stats = FinalizeStats(stats, startTime, endTime, totalSendLatency, totalSealLatency, minLatency, maxLatency, numTransactions, successfulTransactions, network)
         PrintStatsTable(stats)
-        GenerateReport(stats, round)
+        // GenerateReport(stats, round)
 
         // Append the stats of the current round to the allStats slice
         allStats = append(allStats, stats)
 
 		fmt.Printf("Finished round: %s\n", round.Label)
 	}
-
 	fmt.Println(colorstring.Color("[green]Generating results..."))
 	PrintSummary(allStats, benchmark.Test.Rounds)
-
+	GenerateReport(allStats, benchmark.Test.Rounds, "./benchmarkConfig.yaml")
 }

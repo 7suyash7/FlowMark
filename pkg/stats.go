@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"time"
-	"fmt"
 )
 
 type TransactionStats struct {
@@ -47,7 +46,7 @@ func FinalizeStats(stats TransactionStats, startTime time.Time, endTime time.Tim
 	} else {
 		avgSendLatency = totalSendLatency / time.Duration(successfulTransactions)
 		avgSealLatency = totalSealLatency / time.Duration(successfulTransactions)
-		averageLatency = (minLatency + maxLatency) / time.Duration(successfulTransactions)	
+		averageLatency = (minLatency + maxLatency) / 2	
 	}
 	sealRate := float64(numTransactions) / totalSealLatency.Seconds()
 	benchmarkTime := endTime.Sub(startTime)

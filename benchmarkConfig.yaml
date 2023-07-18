@@ -1,25 +1,25 @@
 test:
-  network: "testnet"
+  network: "emulator"
   name: Test
   description: >-
     To benchmark transferring tokens between accounts.
   workers:
     number: 1
   rounds:
-    - label: 50 txns with 10tps
+    - label: 50 txns with 1tps
       description: >-
-        Transfer Tokens between accounts.
+        Transfer tokens between accounts at a rate of 1 transaction per second.
       rateControl:  
         txNumber: 50
-        tps: 20
-    # - label: 50 txns with 5tps
-    #   description: Test description for transfering money between accounts.
-    #   rateControl:
-    #     txNumber: 50
-    #     tps: 5
-    # - label: 50 txns with 10tps
-    #   description: >-
-    #     Transfer Tokens between accounts at a rate of 5 transaction per second.
-    #   rateControl:
-    #     txNumber: 50
-    #     tps: 10
+        tps: 1
+    - label: 100 txns with 5tps
+      description: Transfer tokens between at a rate of 5 transactions per second.
+      rateControl:
+        txNumber: 100
+        tps: 5
+    - label: 20 txns with 2tps
+      description: >-
+        Transfer Tokens between accounts at a rate of 2 transactions per second.
+      rateControl:
+        txNumber: 20
+        tps: 2
