@@ -10,14 +10,14 @@ scriptArguments:
     type: "Address"
     value: "01cf0e2f2f715450"
 payer:
-  useSameAccount: true
-  address: "xxxxxxxxxxxxxxxxx"
-  privateKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  address: "f8d6e0586b0a20c7"
+  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"
 proposer:
   useSameAccount: true
-  address: "xxxxxxxxxxxxxxxxx"
-  privateKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  address: "0x1234567890abcdef"
+  privateKey: "proposerprivatekey123"
+  proposerKeyIndex: 0
 authorizer:
   useSameAccount: true
-  address: "xxxxxxxxxxxxxxxxx"
-  privateKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  address: "0xabcdef1234567890"
+  privateKey: "authorizerprivatekey123"

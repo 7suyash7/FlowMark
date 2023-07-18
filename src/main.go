@@ -18,6 +18,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/ttacon/chalk"
 	"github.com/mitchellh/colorstring"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
 )
 
 func main() {
@@ -254,8 +256,6 @@ func runBenchmark() {
 				}
 
 				// endTime = txEndTime
-				fmt.Println("endtime: %s", endTime)
-				fmt.Println("startime: %s", startTime)
 
 				if success {
 					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
