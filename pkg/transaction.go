@@ -154,20 +154,17 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     tx.SetPayer(senderAccount.Address)
     tx.AddAuthorizer(senderAccount.Address)
 
-	amount, err := cadence.NewUFix64("1.234")
-    if err != nil {
-        panic(err)
-    }
+	for _, arg := range transaction.ScriptArguments {
+		argType := arg.Type
+		argValue := arg.Value
+		
+		cadenceValue, err := createCadenceValue(argType, argValue)
+			if err != nil {
+					fmt.Println("Error creating Cadence value:", err)
+					continue
+			}
 
-    if err = tx.AddArgument(amount); err != nil {
-        panic(err)
-    }
-
-    recipient := cadence.NewAddress(flow.HexToAddress("01cf0e2f2f715450"))
-
-    err = tx.AddArgument(recipient)
-    if err != nil {
-        panic(err)
+		tx.AddArgument(cadenceValue)
     }
 
     sigAlgo := crypto.ECDSA_P256
