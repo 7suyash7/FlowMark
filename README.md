@@ -1,6 +1,8 @@
 
 # FlowMark
 
+[Pitch Deck](https://docs.google.com/presentation/d/17dlC4BCtM9YbDP4K2p4MJBlBShgg3x2FuhRq-WNAGFA/edit?usp=sharing)
+
 Welcome to the Flow Blockchain Benchmarking Tool, a comprehensive utility designed to evaluate and measure the performance of the Flow Blockchain. This tool is an essential asset for developers, researchers, and enthusiasts who are interested in understanding the performance characteristics of the Flow Blockchain under various conditions.
 
 Benchmarking is a crucial process in the world of blockchain technology. It provides a systematic and quantitative evaluation of the system's performance, including aspects like transaction speed, seal time, smart contract execution efficiency, network latency, etv. Benchmarking helps identify bottlenecks, areas for improvement, and provides a basis for comparison with other blockchain systems.
@@ -17,7 +19,7 @@ Our Flow Blockchain Benchmarking Tool is designed to provide these insights by s
     + [- Rounds](#--rounds)
   * [Setting up the settings for Transactions](#setting-up-the-settings-for-transactions)
   * [Building and Running the Benchmark](#building-and-running-the-benchmark)
-  * [Sample Report](#add-html-screenshot-here)
+- [ADD HTML SCREENSHOT HERE](#add-html-screenshot-here)
   * [Understanding the Metrics](#understanding-the-metrics)
   * [How it Works (Architecture)](#how-it-works--architecture-)
   * [Features and Benefits for the Flow Blockchain Ecosystem](#features-and-benefits-for-the-flow-blockchain-ecosystem)
@@ -81,6 +83,12 @@ Each round represents a different set of transactions that will be executed as p
 By adjusting these parameters, you can create a wide variety of tests to benchmark the Flow Blockchain under different conditions. Remember to save your changes to the **`benchmarkConfig.yaml`** file before running the benchmark tool.
 
 ## Setting up the settings for Transactions
+
+Note: Currently there's a bug that will cause a transaction to fail sometimes when using custom scripts, this happens because the arguments don't load in order all the time. It's fixable but we didn't have enought time :D
+  This is the error that might show up -
+    * transaction execute failed: [Error Code: 1101] cadence runtime error: Execution failed:
+  error: invalid argument at index 0: expected value of type `UFix64`
+
 
 The **`transactionConfig.yaml`** file is where you define the specifics of the transactions that will be executed during the benchmark tests. This includes the path to the Cadence script that will be executed, the gas limit for the transactions, the arguments passed to the script, and the details of the accounts involved in the transaction. The accounts that we generated in the previous section can be used here.
 Here's a breakdown of each section:
@@ -148,7 +156,7 @@ These metrics provide a comprehensive overview of the performance of the Flow Bl
 
 The Results are displayed in the terminal and also a **`report.html`** is generated in the project root directory that can be opened from the terminal and it displays these metrics in a more accurate and extensive format.
 
-# ADD HTML SCREENSHOT HERE
+!(html page)[./img/HTMLpage.jpeg]
 
 ## Understanding the Metrics
 The benchmarking tool provides a range of metrics that offer insights into the performance of the Flow Blockchain under different conditions. Here's what each metric means:
@@ -173,7 +181,7 @@ These metrics together provide a comprehensive overview of the performance and r
 
 ## How it Works (Architecture)
 
-#Include diagrams here
+![Picture of architecture](./img/architecture.jpg)
 
 ## Features and Benefits for the Flow Blockchain Ecosystem
 The Flow Blockchain Benchmarking Tool is a powerful utility that offers a range of features designed to help understand and optimize the performance of the Flow Blockchain. Here's how it can benefit the Flow Blockchain ecosystem:

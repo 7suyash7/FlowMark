@@ -199,7 +199,6 @@ func SendTransaction(ctx context.Context, client *http.Client, senderAccount *fl
     }
     txEndTime := time.Now()
     txHex := tx.ID().Hex()
-    // fmt.Printf("hex: %s \n", txHex)
 
     WaitForSeal(ctx, client, tx.ID())
     sealEndTime := time.Now()

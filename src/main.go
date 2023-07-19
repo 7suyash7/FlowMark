@@ -255,8 +255,6 @@ func runBenchmark() {
 					endTime = txEndTime
 				}
 
-				// endTime = txEndTime
-
 				if success {
 					fmt.Println(chalk.Green.Color(fmt.Sprintf("Transaction sent successfully at %v", time.Now())))
 				} else {

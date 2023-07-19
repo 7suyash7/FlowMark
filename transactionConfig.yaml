@@ -1,5 +1,5 @@
 scriptPath: "script/sendFlow.cdc"
-gasLimit: 1000000
+gasLimit: 1000
 scriptArguments:
   amount:
     name: "amount"
@@ -11,7 +11,7 @@ scriptArguments:
     value: "01cf0e2f2f715450"
 payer:
   address: "f8d6e0586b0a20c7"
-  privateKey: "bd674c5bccc5a43b61395cd886c291438c4a2592451b6c04e727959b77e3b1cc"
+  privateKey: "5112883de06b9576af62b9aafa7ead685fb7fb46c495039b1a83649d61bff97c"
 proposer:
   useSameAccount: true
   address: "0x1234567890abcdef"
