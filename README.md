@@ -17,7 +17,7 @@ Our Flow Blockchain Benchmarking Tool is designed to provide these insights by s
     + [- Rounds](#--rounds)
   * [Setting up the settings for Transactions](#setting-up-the-settings-for-transactions)
   * [Building and Running the Benchmark](#building-and-running-the-benchmark)
-- [ADD HTML SCREENSHOT HERE](#add-html-screenshot-here)
+  * [Sample Report](#add-html-screenshot-here)
   * [Understanding the Metrics](#understanding-the-metrics)
   * [How it Works (Architecture)](#how-it-works--architecture-)
   * [Features and Benefits for the Flow Blockchain Ecosystem](#features-and-benefits-for-the-flow-blockchain-ecosystem)

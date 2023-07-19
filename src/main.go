@@ -18,6 +18,8 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/ttacon/chalk"
 	"github.com/mitchellh/colorstring"
+	"github.com/vbauerster/mpb"
+	"github.com/vbauerster/mpb/decor"
 )
 
 func main() {
