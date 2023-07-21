@@ -156,7 +156,7 @@ These metrics provide a comprehensive overview of the performance of the Flow Bl
 
 The Results are displayed in the terminal and also a **`report.html`** is generated in the project root directory that can be opened from the terminal and it displays these metrics in a more accurate and extensive format.
 
-!(html page)[./img/HTMLpage.jpeg]
+![HTMLpage](https://github.com/7suyash7/FlowMark/assets/50615534/bd46371c-3ba8-4f0a-866c-7a8e13cd8928)
 
 ## Understanding the Metrics
 The benchmarking tool provides a range of metrics that offer insights into the performance of the Flow Blockchain under different conditions. Here's what each metric means:
@@ -181,7 +181,7 @@ These metrics together provide a comprehensive overview of the performance and r
 
 ## How it Works (Architecture)
 
-![Picture of architecture](./img/architecture.jpg)
+![architecture](https://github.com/7suyash7/FlowMark/assets/50615534/92210138-fc08-44ed-a8b0-3fb70b27e172)
 
 ## Features and Benefits for the Flow Blockchain Ecosystem
 The Flow Blockchain Benchmarking Tool is a powerful utility that offers a range of features designed to help understand and optimize the performance of the Flow Blockchain. Here's how it can benefit the Flow Blockchain ecosystem:
