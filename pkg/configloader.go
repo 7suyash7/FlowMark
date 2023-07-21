@@ -39,7 +39,7 @@ type Benchmark struct {
 type Transaction struct {
 	ScriptPath       string `yaml:"scriptPath"`
 	GasLimit         uint64 `yaml:"gasLimit"`
-	ScriptArguments  map[string]struct {
+	ScriptArguments  []struct {
 		Name  string `yaml:"name"`
 		Type  string `yaml:"type"`
 		Value string `yaml:"value"`

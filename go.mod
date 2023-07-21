@@ -22,6 +22,7 @@ require (
 	github.com/go-test/deep v1.1.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/iancoleman/orderedmap v0.3.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
@@ -44,6 +45,7 @@ require (
 	github.com/vbauerster/mpb v3.4.0+incompatible // indirect
 	github.com/vbauerster/mpb/v6 v6.0.4 // indirect
 	github.com/wcharczuk/go-chart v2.0.1+incompatible // indirect
+	github.com/wk8/go-ordered-map v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect

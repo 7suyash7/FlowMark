@@ -1,12 +1,10 @@
 scriptPath: "script/sendFlowTestnet.cdc"
 gasLimit: 1000
 scriptArguments:
-  amount:
-    name: "amount"
+  - name: "amount"
     type: "UFix64"
     value: "1.234"
-  recipient:
-    name: "recipient"
+  - name: "recipient"
     type: "Address"
     value: "01cf0e2f2f715450"
 payer:
