@@ -244,7 +244,7 @@ func AddKeys(ctx context.Context, client *http.Client, senderAccount *flow.Accou
 		}
 	`
 	tx.SetScript([]byte(script))
-	tx.SetGasLimit(100000)
+	tx.SetGasLimit(9999)
 
 	latestBlock, err := client.GetLatestBlockHeader(ctx, true)
 	if err != nil {
