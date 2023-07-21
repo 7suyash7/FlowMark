@@ -1,4 +1,4 @@
-scriptPath: "script/sendFlow.cdc"
+scriptPath: "script/sendFlowTestnet.cdc"
 gasLimit: 1000
 scriptArguments:
   amount:
