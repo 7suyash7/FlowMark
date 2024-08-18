@@ -1,5 +1,15 @@
+<p align="center">
+    <img width="200" alt="FlowMark Logo" src="./img/Logo.webp">
+</p>
 
-# FlowMark
+<h1 align="center">FlowMark</h1>
+
+<p align="center">
+  <img alt="FlowMark Preview"
+       src="img/SS1.webp">
+</p>
+
+# About
 
 [Pitch Deck](https://docs.google.com/presentation/d/17dlC4BCtM9YbDP4K2p4MJBlBShgg3x2FuhRq-WNAGFA/edit?usp=sharing)
 
